@@ -1,6 +1,6 @@
 // js/db.js
 const SUPABASE_URL = 'https://myswiebbatzllqrctw.supabase.co';
-const SUPABASE_KEY = 'PEGA_AQUI_TU_CLAVE_COMPLETA_QUE_EMPIEZA_CON_sb_publishable_';
+const SUPABASE_KEY = 'sb_publishable_IQ8Ckee41etEJRT_c8weCg_YSEcR2sp';
 
 const script = document.createElement('script');
 script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
