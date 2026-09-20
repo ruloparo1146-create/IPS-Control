@@ -146,5 +146,27 @@
       }
     });
   </script>
+  <script>
+    // Verificar si el usuario estÃ¡ logueado al cargar la pÃ¡gina
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Esperar a que Supabase estÃ© listo
+      let intentos = 0;
+      while (!window.supabase || !window.supabase.auth) {
+        await new Promise(r => setTimeout(r, 200));
+        intentos++;
+        if (intentos > 20) break;
+      }
+
+      const { data: { session } } = await window.supabase.auth.getSession();
+      
+      if (!session) {
+        // Si no hay sesiÃ³n, redirigir al login
+        window.location.href = 'login.html';
+      } else {
+        // Si estÃ¡ logueado, mostrar su email en la barra superior
+        document.getElementById('user-email').innerText = session.user.email;
+      }
+    });
+  </script>
 </body>
 </html>
