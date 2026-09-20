@@ -3,16 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPS Control - Inicio</title>
+  <title>IPS Control - Panel</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <div id="app">
-    <h1>IPS Control</h1>
-    <p>Cargando sistema...</p>
-  </div>
+<body class="bg-light">
   
-  <!-- Cargar Supabase directamente aquÃ­ -->
+  <nav class="navbar navbar-dark bg-primary mb-4">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1">ðŸ’° IPS Control</span>
+      <span class="text-white" id="user-email">Cargando...</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    
+    <!-- Panel de Supervivencia -->
+    <div id="panel-supervivencia" class="card mb-4 shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">â³ Control de Supervivencia</h5>
+        <p class="card-text" id="supervivencia-texto">Calculando...</p>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card shadow-sm text-center">
+          <div class="card-body">
+            <h6 class="text-muted">Ãšltimo Cobro (Euros)</h6>
+            <h3 id="ultimo-cobro">--</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card shadow-sm text-center">
+          <div class="card-body">
+            <h6 class="text-muted">Total HistÃ³rico (Euros)</h6>
+            <h3 id="total-historico">--</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de acciÃ³n -->
+    <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+      <button class="btn btn-success btn-lg" onclick="alert('PrÃ³ximamente: Calculadora')">ðŸ§® Nueva ConversiÃ³n</button>
+      <button class="btn btn-info btn-lg text-white" onclick="alert('PrÃ³ximamente: Historial')">ðŸ“œ Ver Historial Completo</button>
+    </div>
+
+    <!-- Tabla de Ãºltimos cobros -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Ãšltimos Movimientos</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Fecha Recibo</th>
+                <th>Monto Pesos</th>
+                <th>Monto Euros</th>
+                <th>Banco</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-cobros">
+              <tr><td colspan="4" class="text-center">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <script src="js/db.js"></script>
