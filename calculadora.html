@@ -105,11 +105,9 @@
     let datosCalculados = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      // Poner fecha de hoy por defecto
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('fecha_recibo').value = hoy;
 
-      // Verificar sesion
       let intentos = 0;
       while (typeof window.db === 'undefined') {
         await new Promise(r => setTimeout(r, 200));
@@ -124,10 +122,15 @@
       const btn = event.target;
       btn.innerText = 'Buscando...';
       try {
-        const res = await fetch('https://api.bluelytics.com.ar/v1/latest?type=euro');
+        // API DolarAPI - Cotizacion Euro Oficial
+        const res = await fetch('https://dolarapi.com/v1/cotizaciones/euros');
         const data = await res.json();
-        if (data && data.venta) {
-          document.getElementById('cotizacion').value = data.venta;
+        
+        // Buscar el tipo "oficial"
+        const euroOficial = data.find(item => item.casa === 'oficial');
+        
+        if (euroOficial && euroOficial.venta) {
+          document.getElementById('cotizacion').value = euroOficial.venta;
         } else {
           alert('No se pudo obtener la cotizacion. Ingresala a mano.');
         }
