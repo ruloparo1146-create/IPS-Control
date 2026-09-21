@@ -267,5 +267,77 @@
       });
     }
   </script>
+  <script>
+    // ==== SISTEMA DE NOTIFICACIONES ====
+    async function pedirPermisoNotificaciones() {
+      if (!('Notification' in window)) {
+        console.log('Este navegador no soporta notificaciones.');
+        return false;
+      }
+
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') return false;
+
+      const permiso = await Notification.requestPermission();
+      return permiso === 'granted';
+    }
+
+    async function enviarNotificacion(titulo, cuerpo, tag) {
+      const permiso = await pedirPermisoNotificaciones();
+      if (!permiso) return;
+
+      // Asegurar que el Service Worker estÃ© listo
+      if (!navigator.serviceWorker.controller) {
+        console.log('Service Worker no esta controlando la pagina todavia.');
+        return;
+      }
+
+      // Enviar mensaje al Service Worker para mostrar la notificacion
+      navigator.serviceWorker.controller.postMessage({
+        type: 'MOSTRAR_NOTIFICACION',
+        titulo: titulo,
+        cuerpo: cuerpo,
+        tag: tag
+      });
+    }
+
+    // Verificar automaticamente si hay que notificar al cargar
+    window.addEventListener('load', async () => {
+      // Esperar 2 segundos para que todo cargue bien
+      await new Promise(r => setTimeout(r, 2000));
+      
+      // Si hay tramites cargados y la alerta es roja o amarilla, notificar
+      if (typeof todosLosTramites !== 'undefined' && todosLosTramites.length > 0) {
+        const ultimo = todosLosTramites[0];
+        const fechaUltimo = new Date(ultimo.supervivencia_enviada);
+        const proximo = new Date(fechaUltimo);
+        proximo.setMonth(proximo.getMonth() + 5);
+
+        const hoy = new Date();
+        const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
+
+        // Solo notificamos si estamos en zona amarilla o roja
+        if (diffDias < 0) {
+          enviarNotificacion(
+            'TRAMITE VENCIDO - IPS Control',
+            `El tramite de supervivencia esta vencido hace ${Math.abs(diffDias)} dias. Enviar urgente!`,
+            'supervivencia-vencida'
+          );
+        } else if (diffDias <= 30) {
+          enviarNotificacion(
+            'URGENTE: Tramite en 30 dias o menos',
+            `Te quedan ${diffDias} dias para enviar el certificado de supervivencia.`,
+            'supervivencia-urgente'
+          );
+        } else if (diffDias <= 60) {
+          enviarNotificacion(
+            'ATENCION: Tramite en 60 dias o menos',
+            `Te quedan ${diffDias} dias para preparar el tramite de supervivencia.`,
+            'supervivencia-atencion'
+          );
+        }
+      }
+    });
+  </script>
 </body>
 </html>
