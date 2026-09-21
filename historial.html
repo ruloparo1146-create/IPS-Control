@@ -227,17 +227,17 @@
     }
 
     // ==== EXPORTAR ====
+   // ==== EXPORTAR MEJORADO ====
     function exportarCSV() {
-      if (datosFiltrados.length === 0) { alert('No hay datos para exportar.'); return; }
+      if (todosLosDatos.length === 0) { alert('No hay datos para exportar.'); return; }
 
       const headers = ['recibo_vision_fecha', 'recibo_fecha_pago_arg', 'monto_pesos', 'transferencia_fecha', 'monto_euros', 'cotizacion_banco_euro', 'banco_detalle', 'obs'];
       
       let csv = headers.join(',') + '\n';
       
-      datosFiltrados.forEach(c => {
+      todosLosDatos.forEach(c => {
         const fila = headers.map(h => {
           let valor = c[h] === null || c[h] === undefined ? '' : String(c[h]);
-          // Escapar comas y comillas
           if (valor.includes(',') || valor.includes('"') || valor.includes('\n')) {
             valor = '"' + valor.replace(/"/g, '""') + '"';
           }
@@ -246,13 +246,29 @@
         csv += fila.join(',') + '\n';
       });
 
-      descargarArchivo(csv, `IPS_Historial_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8;');
+      const fecha = new Date().toISOString().slice(0,10);
+      descargarArchivo(csv, `IPS_Backup_${fecha}.csv`, 'text/csv;charset=utf-8;');
+      localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
+      alert('Backup descargado correctamente. Guardalo en un lugar seguro.');
     }
 
     function exportarJSON() {
-      if (datosFiltrados.length === 0) { alert('No hay datos para exportar.'); return; }
-      const json = JSON.stringify(datosFiltrados, null, 2);
-      descargarArchivo(json, `IPS_Historial_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
+      if (todosLosDatos.length === 0) { alert('No hay datos para exportar.'); return; }
+      
+      // Incluir metadatos en el JSON
+      const backup = {
+        app: 'IPS Control',
+        version: '1.0',
+        fecha_backup: new Date().toISOString(),
+        total_registros: todosLosDatos.length,
+        registros: todosLosDatos
+      };
+      
+      const json = JSON.stringify(backup, null, 2);
+      const fecha = new Date().toISOString().slice(0,10);
+      descargarArchivo(json, `IPS_Backup_${fecha}.json`, 'application/json');
+      localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
+      alert('Backup descargado correctamente. Guardalo en un lugar seguro.');
     }
 
     function descargarArchivo(contenido, nombre, tipo) {
