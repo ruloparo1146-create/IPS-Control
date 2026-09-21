@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPS Control - Supervivencia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .bg-ips { background-color: #50B9C0 !important; }
+    .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
+    .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
+    .semaforo { font-size: 4rem; line-height: 1; }
+  </style>
+</head>
+<body class="bg-light">
+  
+  <nav class="navbar navbar-dark bg-ips mb-4">
+    <div class="container">
+      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    
+    <!-- Panel principal de estado -->
+    <div id="panel-estado" class="card shadow-sm mb-4">
+      <div class="card-body text-center py-4">
+        <div id="semaforo-icono" class="semaforo mb-2">Cargando...</div>
+        <h3 id="estado-titulo">Calculando...</h3>
+        <p class="text-muted mb-0" id="estado-detalle"></p>
+      </div>
+    </div>
+
+    <!-- Boton para abrir formulario -->
+    <div class="d-grid mb-4">
+      <button class="btn btn-ips btn-lg" data-bs-toggle="collapse" data-bs-target="#formSupervivencia">
+        Registrar Nuevo Tramite
+      </button>
+    </div>
+
+    <!-- Formulario colapsable -->
+    <div class="collapse mb-4" id="formSupervivencia">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">Nuevo Tramite de Supervivencia</h5>
+        </div>
+        <div class="card-body">
+          <form id="form-supervivencia">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Fecha de Envio del Certificado</label>
+                <input type="date" id="fecha_envio" class="form-control" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Fecha de Recepcion (opcional)</label>
+                <input type="date" id="fecha_recepcion" class="form-control">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Observaciones (opcional)</label>
+              <input type="text" id="obs_supervivencia" class="form-control" placeholder="Ej: Enviado por correo certificado">
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success btn-lg">Guardar Tramite</button>
+            </div>
+          </form>
+          <div id="mensaje-guardado-sup" class="text-center mt-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial de tramites -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Historial de Tramites</h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Envio</th>
+                <th>Recepcion</th>
+                <th>Demora</th>
+                <th>Obs</th>
+                <th>Proximo</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-supervivencia">
+              <tr><td colspan="5" class="text-center">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    let todosLosTramites = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      let intentos = 0;
+      while (typeof window.db === 'undefined') {
+        await new Promise(r => setTimeout(r, 200));
+        intentos++;
+        if (intentos > 20) {
+          document.getElementById('estado-titulo').innerText = 'Error: No se pudo conectar.';
+          return;
+        }
+      }
+
+      const session = await verificarSesion();
+      if (!session) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Poner fecha de hoy por defecto en el form
+      document.getElementById('fecha_envio').value = new Date().toISOString().split('T')[0];
+
+      // Cargar datos
+      await cargarTramites();
+      configurarFormulario();
+    });
+
+    async function cargarTramites() {
+      try {
+        const { data, error } = await window.db
+          .from('cobros')
+          .select('*')
+          .not('supervivencia_enviada', 'is', null)
+          .order('supervivencia_enviada', { ascending: false });
+
+        if (error) throw error;
+
+        todosLosTramites = data || [];
+        renderizarTabla();
+        actualizarSemaforo();
+
+      } catch (error) {
+        document.getElementById('tabla-supervivencia').innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+      }
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById('tabla-supervivencia');
+
+      if (todosLosTramites.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay tramites registrados. Registra el primero!</td></tr>';
+        return;
+      }
+
+      let html = '';
+      todosLosTramites.forEach(t => {
+        let demora = '-';
+        if (t.supervivencia_enviada && t.supervivencia_recibida) {
+          const dias = Math.round((new Date(t.supervivencia_recibida) - new Date(t.supervivencia_enviada)) / (1000 * 60 * 60 * 24));
+          demora = dias + ' dias';
+        }
+
+        // Proximo tramite (5 meses despues del envio)
+        let proximo = '-';
+        if (t.supervivencia_enviada) {
+          const fecha = new Date(t.supervivencia_enviada);
+          fecha.setMonth(fecha.getMonth() + 5);
+          proximo = fecha.toLocaleDateString('es-ES');
+        }
+
+        html += `
+          <tr>
+            <td>${t.supervivencia_enviada || '-'}</td>
+            <td>${t.supervivencia_recibida || 'Pendiente'}</td>
+            <td>${demora}</td>
+            <td><small>${t.obs || '-'}</small></td>
+            <td>${proximo}</td>
+          </tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function actualizarSemaforo() {
+      const icono = document.getElementById('semaforo-icono');
+      const titulo = document.getElementById('estado-titulo');
+      const detalle = document.getElementById('estado-detalle');
+      const panel = document.getElementById('panel-estado');
+
+      if (todosLosTramites.length === 0) {
+        icono.innerText = 'ALERTA';
+        titulo.innerText = 'Sin registro de supervivencia';
+        detalle.innerText = 'Registra el primer tramite para empezar a controlar las fechas.';
+        panel.className = 'card shadow-sm mb-4 bg-warning text-dark';
+        return;
+      }
+
+      const ultimo = todosLosTramites[0];
+      const fechaUltimo = new Date(ultimo.supervivencia_enviada);
+      const proximo = new Date(fechaUltimo);
+      proximo.setMonth(proximo.getMonth() + 5);
+
+      const hoy = new Date();
+      const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
+
+      detalle.innerText = `Proximo tramite: ${proximo.toLocaleDateString('es-ES')} (en ${diffDias} dias)`;
+
+      if (diffDias < 0) {
+        icono.innerText = 'VENCIDO';
+        titulo.innerText = 'URGENTE! El tramite esta vencido';
+        panel.className = 'card shadow-sm mb-4 bg-danger text-white';
+      } else if (diffDias <= 30) {
+        icono.innerText = 'URGENTE';
+        titulo.innerText = 'Quedan menos de 30 dias';
+        panel.className = 'card shadow-sm mb-4 bg-danger text-white';
+      } else if (diffDias <= 60) {
+        icono.innerText = 'ATENCION';
+        titulo.innerText = 'Quedan menos de 60 dias';
+        panel.className = 'card shadow-sm mb-4 bg-warning text-dark';
+      } else {
+        icono.innerText = 'OK';
+        titulo.innerText = 'Todo en orden';
+        panel.className = 'card shadow-sm mb-4 bg-success text-white';
+      }
+    }
+
+    function configurarFormulario() {
+      document.getElementById('form-supervivencia').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('mensaje-guardado-sup');
+        msg.innerText = 'Guardando...';
+
+        const session = await verificarSesion();
+        if (!session) return;
+
+        const fechaEnvio = document.getElementById('fecha_envio').value;
+        const fechaRecepcion = document.getElementById('fecha_recepcion').value || null;
+
+        // Calcular proxima fecha automaticamente
+        const proxima = new Date(fechaEnvio);
+        proxima.setMonth(proxima.getMonth() + 5);
+
+        const { error } = await window.db.from('cobros').insert([{
+          user_id: session.user.id,
+          recibo_vision_fecha: fechaEnvio,
+          monto_pesos: 0,
+          monto_euros: 0,
+          banco_detalle: 'Tramite Supervivencia',
+          obs: document.getElementById('obs_supervivencia').value || 'Pedido Supervivencia',
+          supervivencia_enviada: fechaEnvio,
+          supervivencia_recibida: fechaRecepcion,
+          proxima_supervivencia: proxima.toISOString().split('T')[0]
+        }]);
+
+        if (error) {
+          msg.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+        } else {
+          msg.innerHTML = `<span class="text-success">Tramite guardado con exito!</span>`;
+          document.getElementById('form-supervivencia').reset();
+          // Recargar
+          await cargarTramites();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
