@@ -6,13 +6,17 @@
   <title>IPS Control - Historial</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    body { background-color: #E8F4F5 !important; }
     .bg-ips { background-color: #50B9C0 !important; }
     .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
     .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
     .table-sm td, .table-sm th { padding: 0.4rem; font-size: 0.9rem; }
+    .card { background-color: #ffffff; }
+    .fila-supervivencia { background-color: #fff8e1 !important; }
+    .fila-cobro { background-color: #ffffff !important; }
   </style>
 </head>
-<body class="bg-light">
+<body>
   
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
@@ -26,6 +30,24 @@
     <!-- Filtros y Exportar -->
     <div class="card shadow-sm mb-3">
       <div class="card-body">
+        
+        <!-- Tipo de registro -->
+        <div class="row g-2 mb-3">
+          <div class="col-12">
+            <label class="form-label small mb-1"><strong>Tipo de registro</strong></label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="tipo" id="tipo_todos" value="todos" checked onchange="aplicarFiltros()">
+              <label class="btn btn-outline-secondary" for="tipo_todos">Todos</label>
+              
+              <input type="radio" class="btn-check" name="tipo" id="tipo_sueldos" value="sueldos" onchange="aplicarFiltros()">
+              <label class="btn btn-outline-primary" for="tipo_sueldos">Solo Sueldos</label>
+              
+              <input type="radio" class="btn-check" name="tipo" id="tipo_supervivencia" value="supervivencia" onchange="aplicarFiltros()">
+              <label class="btn btn-outline-warning" for="tipo_supervivencia">Solo Supervivencia</label>
+            </div>
+          </div>
+        </div>
+
         <div class="row g-2 align-items-end">
           <div class="col-md-3">
             <label class="form-label small mb-1">Ano</label>
@@ -41,7 +63,7 @@
           </div>
           <div class="col-md-4">
             <label class="form-label small mb-1">Buscar</label>
-            <input type="text" id="filtro-busqueda" class="form-control" placeholder="Buscar en observaciones o monto..." oninput="aplicarFiltros()">
+            <input type="text" id="filtro-busqueda" class="form-control" placeholder="Buscar..." oninput="aplicarFiltros()">
           </div>
           <div class="col-md-2">
             <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">Limpiar</button>
@@ -64,6 +86,7 @@
           <table class="table table-striped table-hover table-sm mb-0">
             <thead class="table-dark">
               <tr>
+                <th>Tipo</th>
                 <th>Fecha</th>
                 <th>Pesos</th>
                 <th>Euros</th>
@@ -74,7 +97,7 @@
               </tr>
             </thead>
             <tbody id="tabla-historial">
-              <tr><td colspan="7" class="text-center">Cargando datos...</td></tr>
+              <tr><td colspan="8" class="text-center">Cargando datos...</td></tr>
             </tbody>
           </table>
         </div>
@@ -93,25 +116,22 @@
     let datosFiltrados = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-      // Esperar conexion
       let intentos = 0;
       while (typeof window.db === 'undefined') {
         await new Promise(r => setTimeout(r, 200));
         intentos++;
         if (intentos > 20) {
-          document.getElementById('tabla-historial').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error: No se pudo conectar.</td></tr>';
+          document.getElementById('tabla-historial').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error: No se pudo conectar.</td></tr>';
           return;
         }
       }
 
-      // Verificar sesion
       const session = await verificarSesion();
       if (!session) {
         window.location.href = 'login.html';
         return;
       }
 
-      // Cargar todos los datos
       await cargarTodosLosDatos();
     });
 
@@ -150,16 +170,23 @@
         aplicarFiltros();
 
       } catch (error) {
-        document.getElementById('tabla-historial').innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        document.getElementById('tabla-historial').innerHTML = `<tr><td colspan="8" class="text-center text-danger">Error: ${error.message}</td></tr>`;
       }
     }
 
     function aplicarFiltros() {
+      const tipo = document.querySelector('input[name="tipo"]:checked').value;
       const anio = document.getElementById('filtro-anio').value;
       const banco = document.getElementById('filtro-banco').value;
       const busqueda = document.getElementById('filtro-busqueda').value.toLowerCase().trim();
 
       datosFiltrados = todosLosDatos.filter(c => {
+        // Filtro tipo
+        const esSupervivencia = c.banco_detalle && c.banco_detalle.toLowerCase().includes('supervivencia');
+        
+        if (tipo === 'sueldos' && esSupervivencia) return false;
+        if (tipo === 'supervivencia' && !esSupervivencia) return false;
+        
         // Filtro ano
         if (anio && (!c.recibo_vision_fecha || !c.recibo_vision_fecha.startsWith(anio))) return false;
         
@@ -182,18 +209,31 @@
       const tbody = document.getElementById('tabla-historial');
 
       if (datosFiltrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay resultados con esos filtros.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay resultados con esos filtros.</td></tr>';
         return;
       }
 
       let html = '';
       datosFiltrados.forEach(c => {
+        const esSupervivencia = c.banco_detalle && c.banco_detalle.toLowerCase().includes('supervivencia');
+        const claseFila = esSupervivencia ? 'fila-supervivencia' : 'fila-cobro';
+        const tipoBadge = esSupervivencia 
+          ? '<span class="badge bg-warning text-dark">Supervivencia</span>' 
+          : '<span class="badge bg-primary">Sueldo</span>';
+
+        // Si es supervivencia, mostrar fechas de envio/recepcion
+        let fechaMostrar = c.recibo_vision_fecha || '-';
+        if (esSupervivencia && c.supervivencia_enviada) {
+          fechaMostrar = c.supervivencia_enviada;
+        }
+
         html += `
-          <tr>
-            <td>${c.recibo_vision_fecha || '-'}</td>
-            <td>$${c.monto_pesos ? parseFloat(c.monto_pesos).toLocaleString('es-AR') : '-'}</td>
-            <td>EUR ${c.monto_euros ? parseFloat(c.monto_euros).toLocaleString('es-ES') : '-'}</td>
-            <td>${c.cotizacion_banco_euro || '-'}</td>
+          <tr class="${claseFila}">
+            <td>${tipoBadge}</td>
+            <td>${fechaMostrar}</td>
+            <td>${esSupervivencia ? '-' : (c.monto_pesos ? '$' + parseFloat(c.monto_pesos).toLocaleString('es-AR') : '-')}</td>
+            <td>${esSupervivencia ? '-' : (c.monto_euros ? 'EUR ' + parseFloat(c.monto_euros).toLocaleString('es-ES') : '-')}</td>
+            <td>${esSupervivencia ? '-' : (c.cotizacion_banco_euro || '-')}</td>
             <td><small>${c.banco_detalle || '-'}</small></td>
             <td><small>${c.obs || ''}</small></td>
             <td class="text-center">
@@ -205,6 +245,7 @@
     }
 
     function limpiarFiltros() {
+      document.getElementById('tipo_todos').checked = true;
       document.getElementById('filtro-anio').value = '';
       document.getElementById('filtro-banco').value = '';
       document.getElementById('filtro-busqueda').value = '';
@@ -219,56 +260,50 @@
       if (error) {
         alert('Error al eliminar: ' + error.message);
       } else {
-        // Eliminar del array local y volver a renderizar
         todosLosDatos = todosLosDatos.filter(c => c.id !== id);
         document.getElementById('total-registros').innerText = `Total: ${todosLosDatos.length} registros`;
         aplicarFiltros();
       }
     }
 
-    // ==== EXPORTAR ====
-   // ==== EXPORTAR MEJORADO ====
     function exportarCSV() {
-      if (todosLosDatos.length === 0) { alert('No hay datos para exportar.'); return; }
+      if (datosFiltrados.length === 0) { alert('No hay datos para exportar.'); return; }
 
-      const headers = ['recibo_vision_fecha', 'recibo_fecha_pago_arg', 'monto_pesos', 'transferencia_fecha', 'monto_euros', 'cotizacion_banco_euro', 'banco_detalle', 'obs'];
+      const headers = ['tipo', 'recibo_vision_fecha', 'recibo_fecha_pago_arg', 'monto_pesos', 'transferencia_fecha', 'monto_euros', 'cotizacion_banco_euro', 'banco_detalle', 'obs', 'supervivencia_enviada', 'supervivencia_recibida'];
       
       let csv = headers.join(',') + '\n';
       
-      todosLosDatos.forEach(c => {
-        const fila = headers.map(h => {
-          let valor = c[h] === null || c[h] === undefined ? '' : String(c[h]);
+      datosFiltrados.forEach(c => {
+        const esSupervivencia = c.banco_detalle && c.banco_detalle.toLowerCase().includes('supervivencia');
+        const fila = [
+          esSupervivencia ? 'Supervivencia' : 'Sueldo',
+          c.recibo_vision_fecha || '',
+          c.recibo_fecha_pago_arg || '',
+          c.monto_pesos || '',
+          c.transferencia_fecha || '',
+          c.monto_euros || '',
+          c.cotizacion_banco_euro || '',
+          c.banco_detalle || '',
+          c.obs || '',
+          c.supervivencia_enviada || '',
+          c.supervivencia_recibida || ''
+        ].map(v => {
+          const valor = String(v);
           if (valor.includes(',') || valor.includes('"') || valor.includes('\n')) {
-            valor = '"' + valor.replace(/"/g, '""') + '"';
+            return '"' + valor.replace(/"/g, '""') + '"';
           }
           return valor;
         });
         csv += fila.join(',') + '\n';
       });
 
-      const fecha = new Date().toISOString().slice(0,10);
-      descargarArchivo(csv, `IPS_Backup_${fecha}.csv`, 'text/csv;charset=utf-8;');
-      localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
-      alert('Backup descargado correctamente. Guardalo en un lugar seguro.');
+      descargarArchivo(csv, `IPS_Historial_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8;');
     }
 
     function exportarJSON() {
-      if (todosLosDatos.length === 0) { alert('No hay datos para exportar.'); return; }
-      
-      // Incluir metadatos en el JSON
-      const backup = {
-        app: 'IPS Control',
-        version: '1.0',
-        fecha_backup: new Date().toISOString(),
-        total_registros: todosLosDatos.length,
-        registros: todosLosDatos
-      };
-      
-      const json = JSON.stringify(backup, null, 2);
-      const fecha = new Date().toISOString().slice(0,10);
-      descargarArchivo(json, `IPS_Backup_${fecha}.json`, 'application/json');
-      localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
-      alert('Backup descargado correctamente. Guardalo en un lugar seguro.');
+      if (datosFiltrados.length === 0) { alert('No hay datos para exportar.'); return; }
+      const json = JSON.stringify(datosFiltrados, null, 2);
+      descargarArchivo(json, `IPS_Historial_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
     }
 
     function descargarArchivo(contenido, nombre, tipo) {
