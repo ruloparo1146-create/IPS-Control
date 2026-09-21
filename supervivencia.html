@@ -91,13 +91,14 @@
               <tr>
                 <th>Tipo</th>
                 <th>Envio</th>
-                <th>Receuperpcion</th>
+                <th>Recepcion</th>
                 <th>Demora</th>
                 <th>Obs</th>
                 <th>Proximo</th>
                 <th class="text-center">Acciones</th>
               </tr>
             </thead>
+            <!-- âš ï¸ IMPORTANTE: Este ID es el que busca el JavaScript -->
             <tbody id="tabla-supervivencia">
               <tr><td colspan="7" class="text-center">Cargando datos...</td></tr>
             </tbody>
@@ -116,7 +117,6 @@
 
   <script>
     let todosLosTramites = [];
-    window.todosLosTramites = todosLosTramites;
 
     document.addEventListener('DOMContentLoaded', async () => {
       let intentos = 0;
@@ -154,17 +154,25 @@
         if (error) throw error;
 
         todosLosTramites = data || [];
-        window.todosLosTramites = todosLosTramites;
         renderizarTabla();
         actualizarSemaforo();
 
       } catch (error) {
-        document.getElementById('tabla-supervivencia').innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        const tbody = document.getElementById('tabla-supervivencia');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error: ' + error.message + '</td></tr>';
+        }
       }
     }
 
     function renderizarTabla() {
-      const tbody = document.getElementById('tabla-svivencia');
+      const tbody = document.getElementById('tabla-supervivencia');
+
+      // âš ï¸ ESTE CHEQUEO EVITA EL ERROR "tbody is null"
+      if (!tbody) {
+        console.error('Error: No se encontro el tbody con id "tabla-supervivencia"');
+        return;
+      }
 
       if (todosLosTramites.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay tramites registrados. Registra el primero!</td></tr>';
@@ -186,18 +194,15 @@
           proximo = fecha.toLocaleDateString('es-ES');
         }
 
-        html += `
-          <tr>
-            <td><span class="badge bg-warning text-dark">Supervivencia</span></td>
-            <td>${t.supervivencia_enviada || '-'}</td>
-            <td>${t.supervivencia_recibida || 'Pendiente'}</td>
-            <td>${demora}</td>
-            <td><small>${t.obs || '-'}</small></td>
-            <td>${proximo}</td>
-            <td class="text-center">
-              <button class="btn btn-sm btn-outline-danger" onclick="eliminarTramite(${t.id})" title="Eliminar">X</button>
-            </td>
-          </tr>`;
+        html += '<tr>' +
+          '<td><span class="badge bg-warning text-dark">Supervivencia</span></td>' +
+          '<td>' + (t.supervivencia_enviada || '-') + '</td>' +
+          '<td>' + (t.supervivencia_recibida || 'Pendiente') + '</td>' +
+          '<td>' + demora + '</td>' +
+          '<td><small>' + (t.obs || '-') + '</small></td>' +
+          '<td>' + proximo + '</td>' +
+          '<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarTramite(' + t.id + ')" title="Eliminar">X</button></td>' +
+          '</tr>';
       });
       tbody.innerHTML = html;
     }
@@ -224,7 +229,7 @@
       const hoy = new Date();
       const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
 
-      detalle.innerText = `Proximo tramite: ${proximo.toLocaleDateString('es-ES')} (en ${diffDias} dias)`;
+      detalle.innerText = 'Proximo tramite: ' + proximo.toLocaleDateString('es-ES') + ' (en ' + diffDias + ' dias)';
 
       if (diffDias < 0) {
         icono.innerText = 'VENCIDO';
@@ -274,9 +279,9 @@
         }]);
 
         if (error) {
-          msg.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+          msg.innerHTML = '<span class="text-danger">Error: ' + error.message + '</span>';
         } else {
-          msg.innerHTML = `<span class="text-success">Tramite guardado con exito!</span>`;
+          msg.innerHTML = '<span class="text-success">Tramite guardado con exito!</span>';
           document.getElementById('form-supervivencia').reset();
           document.getElementById('fecha_envio').value = new Date().toISOString().split('T')[0];
           await cargarTramites();
@@ -285,10 +290,8 @@
     }
 
     async function eliminarTramite(id) {
-      if (!confirm('Estas seguro de que quieres eliminar este tramite? Esta accion no se puede deshacer.')) return;
-
+      if (!confirm('Estas seguro de que quieres eliminar este tramite?')) return;
       const { error } = await window.db.from('cobros').delete().eq('id', id);
-
       if (error) {
         alert('Error al eliminar: ' + error.message);
       } else {
@@ -298,10 +301,7 @@
 
     // ============ NOTIFICACIONES ============
     async function pedirPermisoNotificaciones() {
-      if (!('Notification' in window)) {
-        console.log('Este navegador no soporta notificaciones.');
-        return false;
-      }
+      if (!('Notification' in window)) return false;
       if (Notification.permission === 'granted') return true;
       if (Notification.permission === 'denied') return false;
       const permiso = await Notification.requestPermission();
@@ -311,12 +311,7 @@
     async function enviarNotificacion(titulo, cuerpo, tag) {
       const permiso = await pedirPermisoNotificaciones();
       if (!permiso) return;
-
-      if (!navigator.serviceWorker.controller) {
-        console.log('Service Worker no controla la pagina todavia.');
-        return;
-      }
-
+      if (!navigator.serviceWorker.controller) return;
       navigator.serviceWorker.controller.postMessage({
         type: 'MOSTRAR_NOTIFICACION',
         titulo: titulo,
@@ -328,36 +323,28 @@
     async function activarNotificaciones() {
       const permiso = await pedirPermisoNotificaciones();
       if (permiso) {
-        await enviarNotificacion(
-          'Notificaciones activadas',
-          'Te avisaremos cuando se acerque el tramite de supervivencia.',
-          'bienvenida'
-        );
+        await enviarNotificacion('Notificaciones activadas', 'Te avisaremos cuando se acerque el tramite.', 'bienvenida');
         alert('Notificaciones activadas correctamente!');
       } else {
         alert('No se pudieron activar las notificaciones. Revisa los permisos del navegador.');
       }
     }
 
-    // Verificar automaticamente si hay que notificar al cargar
     window.addEventListener('load', async () => {
       await new Promise(r => setTimeout(r, 3000));
-      
       if (todosLosTramites.length > 0) {
         const ultimo = todosLosTramites[0];
         const fechaUltimo = new Date(ultimo.supervivencia_enviada);
         const proximo = new Date(fechaUltimo);
         proximo.setMonth(proximo.getMonth() + 5);
-
         const hoy = new Date();
         const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
-
         if (diffDias < 0) {
-          enviarNotificacion('TRAMITE VENCIDO - IPS Control', `El tramite esta vencido hace ${Math.abs(diffDias)} dias. Enviar urgente!`, 'supervivencia-vencida');
+          enviarNotificacion('TRAMITE VENCIDO', 'El tramite esta vencido hace ' + Math.abs(diffDias) + ' dias.', 'supervivencia-vencida');
         } else if (diffDias <= 30) {
-          enviarNotificacion('URGENTE: Tramite en 30 dias o menos', `Te quedan ${diffDias} dias para enviar el certificado.`, 'supervivencia-urgente');
+          enviarNotificacion('URGENTE: Tramite en 30 dias o menos', 'Te quedan ' + diffDias + ' dias.', 'supervivencia-urgente');
         } else if (diffDias <= 60) {
-          enviarNotificacion('ATENCION: Tramite en 60 dias o menos', `Te quedan ${diffDias} dias para preparar el tramite.`, 'supervivencia-atencion');
+          enviarNotificacion('ATENCION: Tramite en 60 dias o menos', 'Te quedan ' + diffDias + ' dias.', 'supervivencia-atencion');
         }
       }
     });
