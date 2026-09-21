@@ -16,6 +16,7 @@
       background-color: #f8fff9 !important;
     }
     #info-cotizacion { font-size: 0.85rem; }
+    .moneda-btn { font-weight: 600; }
   </style>
 </head>
 <body>
@@ -35,6 +36,32 @@
           </div>
           <div class="card-body">
 
+            <!-- Selector de moneda -->
+            <div class="card bg-light mb-3">
+              <div class="card-body">
+                <label class="form-label"><strong>Moneda de destino</strong></label>
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <input type="radio" class="btn-check" name="moneda" id="mon_eur" value="EUR" checked onchange="cambiarMoneda()">
+                    <label class="btn btn-outline-primary w-100 moneda-btn" for="mon_eur">EUR</label>
+                  </div>
+                  <div class="col-md-3">
+                    <input type="radio" class="btn-check" name="moneda" id="mon_usd" value="USD" onchange="cambiarMoneda()">
+                    <label class="btn btn-outline-success w-100 moneda-btn" for="mon_usd">USD</label>
+                  </div>
+                  <div class="col-md-3">
+                    <input type="radio" class="btn-check" name="moneda" id="mon_brl" value="BRL" onchange="cambiarMoneda()">
+                    <label class="btn btn-outline-warning w-100 moneda-btn" for="mon_brl">BRL</label>
+                  </div>
+                  <div class="col-md-3">
+                    <input type="radio" class="btn-check" name="moneda" id="mon_cny" value="CNY" onchange="cambiarMoneda()">
+                    <label class="btn btn-outline-danger w-100 moneda-btn" for="mon_cny">CNY</label>
+                  </div>
+                </div>
+                <small class="text-muted d-block mt-2" id="moneda-ayuda">Euro - Union Europea</small>
+              </div>
+            </div>
+
             <div class="row mb-3">
               <div class="col-md-6">
                 <label class="form-label">Monto en Pesos (ARS)</label>
@@ -48,7 +75,7 @@
 
             <div class="card bg-light mb-3">
               <div class="card-body">
-                <label class="form-label"><strong>Cotizacion del Euro Oficial</strong></label>
+                <label class="form-label"><strong>Cotizacion del <span id="label-moneda">Euro Oficial</span></strong></label>
                 <div class="row g-2 mb-2">
                   <div class="col-12">
                     <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Ingresa o trae la cotizacion">
@@ -56,8 +83,8 @@
                 </div>
                 <div class="row g-2">
                   <div class="col-md-12">
-                    <button type="button" class="btn btn-outline-primary w-100" onclick="traerCotizacionOficial()">
-                      Traer Cotizacion Oficial (BCRA)
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="traerCotizacion()">
+                      Traer Cotizacion Oficial
                     </button>
                   </div>
                 </div>
@@ -67,7 +94,7 @@
 
             <div class="card bg-light mb-3">
               <div class="card-body">
-                <h6 class="text-muted mb-3">Comisiones Fijas (en Euros)</h6>
+                <h6 class="text-muted mb-3">Comisiones Fijas (en <span id="label-moneda-com">Euros</span>)</h6>
                 <div class="row mb-2">
                   <div class="col-md-6">
                     <label class="form-label small">Banco Provincia de Bs As</label>
@@ -89,7 +116,7 @@
 
             <div class="row mb-3">
               <div class="col-md-6">
-                <label class="form-label">Fecha Estimada de Cobro (Italia)</label>
+                <label class="form-label">Fecha Estimada de Cobro</label>
                 <input type="date" id="fecha_transferencia" class="form-control">
               </div>
               <div class="col-md-6">
@@ -152,6 +179,15 @@
 
   <script>
     var datosCalculados = null;
+    var monedaActual = 'EUR';
+
+    // Configuracion por moneda
+    var MONEDAS = {
+      EUR: { nombre: 'Euro', plural: 'Euros', endpoint: 'eur', descripcion: 'Euro - Union Europea' },
+      USD: { nombre: 'Dolar', plural: 'Dolares', endpoint: 'usd', descripcion: 'Dolar - Estados Unidos' },
+      BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' },
+      CNY: { nombre: 'Yuan', plural: 'Yuanes', endpoint: 'cny', descripcion: 'Yuan - China' }
+    };
 
     document.addEventListener('DOMContentLoaded', async function() {
       document.getElementById('fecha_recibo').value = new Date().toISOString().split('T')[0];
@@ -171,84 +207,81 @@
       if (comIta) document.getElementById('comision_ita').value = comIta;
     });
 
+    function cambiarMoneda() {
+      var radio = document.querySelector('input[name="moneda"]:checked');
+      monedaActual = radio.value;
+      var info = MONEDAS[monedaActual];
+
+      document.getElementById('label-moneda').innerText = info.nombre + ' Oficial';
+      document.getElementById('label-moneda-com').innerText = info.plural;
+      document.getElementById('moneda-ayuda').innerText = info.descripcion;
+
+      // Limpiar cotizacion al cambiar de moneda
+      document.getElementById('cotizacion').value = '';
+      document.getElementById('info-cotizacion').innerHTML = '';
+      document.getElementById('resultados').style.display = 'none';
+    }
+
     function guardarComisiones() {
       localStorage.setItem('ips_comision_arg', document.getElementById('comision_arg').value);
       localStorage.setItem('ips_comision_ita', document.getElementById('comision_ita').value);
     }
 
-    // ==== COTIZACION OFICIAL BCRA ====
-    async function traerCotizacionOficial() {
+    // ==== TRAER COTIZACION ====
+    async function traerCotizacion() {
       var btn = event.target;
       var textoOriginal = btn.innerText;
       btn.innerText = 'Buscando...';
       btn.disabled = true;
       var info = document.getElementById('info-cotizacion');
-      info.innerHTML = '<span class="text-muted">Conectando...</span>';
+      var moneda = MONEDAS[monedaActual];
+      info.innerHTML = '<span class="text-muted">Conectando con dolarapi.com...</span>';
 
-      // ==== FUENTE 1: dolarapi.com (endpoint corregido /eur) ====
       try {
-        var res = await fetch('https://dolarapi.com/v1/cotizaciones/eur');
-        console.log('DolarAPI respuesta status:', res.status);
+        // DolarAPI tiene endpoints para eur, brl, cny
+        // Para USD se usa otro endpoint
+        var url;
+        if (monedaActual === 'USD') {
+          url = 'https://dolarapi.com/v1/dolares/oficial';
+        } else {
+          url = 'https://dolarapi.com/v1/cotizaciones/' + moneda.endpoint;
+        }
 
-        if (res.ok) {
-          var data = await res.json();
-          console.log('DolarAPI datos:', data);
+        console.log('Consultando:', url);
+        var res = await fetch(url);
+        console.log('Respuesta status:', res.status);
 
-          var valorVenta = null;
-          if (data && data.venta) {
-            valorVenta = data.venta;
-          } else if (data && data.compra) {
-            valorVenta = data.compra;
-          }
+        if (!res.ok) {
+          throw new Error('El servidor respondio con error ' + res.status);
+        }
 
-          if (valorVenta) {
-            document.getElementById('cotizacion').value = valorVenta;
-            info.innerHTML = '<span class="text-success">Cotizacion Oficial (dolarapi): $' + valorVenta + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
-            btn.innerText = textoOriginal;
-            btn.disabled = false;
-            return;
+        var data = await res.json();
+        console.log('Datos recibidos:', data);
+
+        // Extraer el valor de venta
+        var valorVenta = null;
+        var dataObj = Array.isArray(data) ? data[0] : data;
+
+        if (dataObj) {
+          if (dataObj.venta) {
+            valorVenta = dataObj.venta;
+          } else if (dataObj.compra) {
+            valorVenta = dataObj.compra;
           }
         }
-      } catch (e) {
-        console.warn('DolarAPI fallo, intentando alternativa...', e);
-      }
 
-      // ==== FUENTE 2: BCRA (alternativa) ====
-      try {
-        info.innerHTML = '<span class="text-muted">Intentando con BCRA...</span>';
-        var res2 = await fetch('https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/');
-        console.log('BCRA respuesta status:', res2.status);
-
-        if (res2.ok) {
-          var data2 = await res2.json();
-          console.log('BCRA datos:', data2);
-
-          var lista = data2.results || data2;
-          var euro = null;
-          if (Array.isArray(lista)) {
-            for (var i = 0; i < lista.length; i++) {
-              if (lista[i].codigoMoneda === 'EUR' || lista[i].descripcion === 'EURO') {
-                euro = lista[i];
-                break;
-              }
-            }
-          }
-
-          if (euro && euro.tipoPase) {
-            var valorBcra = euro.tipoPase;
-            document.getElementById('cotizacion').value = valorBcra;
-            info.innerHTML = '<span class="text-success">Cotizacion Oficial (BCRA): $' + valorBcra + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
-            btn.innerText = textoOriginal;
-            btn.disabled = false;
-            return;
-          }
+        if (valorVenta) {
+          document.getElementById('cotizacion').value = valorVenta;
+          info.innerHTML = '<span class="text-success">' + moneda.nombre + ' Oficial: $' + valorVenta + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
+        } else {
+          info.innerHTML = '<span class="text-danger">No se encontro el valor para ' + moneda.nombre + '. Ingresalo a mano.</span>';
         }
+
       } catch (e) {
-        console.warn('BCRA fallo tambien:', e);
+        console.error('Error al traer cotizacion:', e);
+        info.innerHTML = '<span class="text-danger">Error al conectar: ' + e.message + '. Ingresa la cotizacion a mano.</span>';
       }
 
-      // ==== SI FALLAN TODAS LAS FUENTES ====
-      info.innerHTML = '<span class="text-danger">No se pudo obtener la cotizacion automaticamente. Por favor, ingresala a mano (la encontras en tu resumen del banco).</span>';
       btn.innerText = textoOriginal;
       btn.disabled = false;
     }
@@ -271,8 +304,8 @@
       var totalComisiones = usarComisiones ? (comArg + comIta) : 0;
       var neto = bruto - totalComisiones;
 
-      document.getElementById('res-bruto').innerText = 'EUR ' + bruto.toFixed(2);
-      document.getElementById('res-comision').innerText = '- EUR ' + totalComisiones.toFixed(2);
+      document.getElementById('res-bruto').innerText = monedaActual + ' ' + bruto.toFixed(2);
+      document.getElementById('res-comision').innerText = '- ' + monedaActual + ' ' + totalComisiones.toFixed(2);
       document.getElementById('res-neto-editable').value = neto.toFixed(2);
       document.getElementById('resultados').style.display = 'block';
 
@@ -283,7 +316,8 @@
         comIta: comIta,
         totalComisiones: totalComisiones,
         bruto: bruto,
-        neto: neto
+        neto: neto,
+        moneda: monedaActual
       };
     }
 
@@ -299,7 +333,7 @@
       msg.innerText = 'Guardando...';
 
       var obsUsuario = document.getElementById('obs').value || '';
-      var obsComision = 'Com.Arg: EUR' + datosCalculados.comArg + ' + Com.Ita: EUR' + datosCalculados.comIta;
+      var obsComision = 'Com.Arg: ' + datosCalculados.moneda + datosCalculados.comArg + ' + Com.Ita: ' + datosCalculados.moneda + datosCalculados.comIta;
       var obsFinal = obsUsuario ? (obsUsuario + ' | ' + obsComision) : obsComision;
 
       var result = await window.db.from('cobros').insert([{
