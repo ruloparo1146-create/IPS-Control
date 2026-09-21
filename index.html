@@ -15,7 +15,7 @@
     
     .bg-ips { background-color: #50B9C0 !important; }
     
-    /* Todos los botones del panel con el mismo estilo */
+    /* Botones del panel con estilo uniforme */
     .btn-panel {
       background-color: #ffffff;
       border: 2px solid #50B9C0;
@@ -28,7 +28,7 @@
       color: white;
     }
     
-    /* Excepciones: Ingreso Mensual y Supervivencia van con color solido */
+    /* Excepciones: Ingreso Mensual y Supervivencia con color solido */
     .btn-panel-destacado {
       background-color: #50B9C0;
       border: 2px solid #50B9C0;
@@ -126,6 +126,7 @@
       <a href="historial.html" class="alert-link">Ir al Historial para descargar</a>
     </div>
 
+    <!-- Panel de Supervivencia -->
     <div id="panel-supervivencia" class="card mb-4 shadow-sm">
       <div class="card-body text-center">
         <h5 class="card-title">Control de Supervivencia</h5>
@@ -133,8 +134,9 @@
       </div>
     </div>
 
+    <!-- Resumenes -->
     <div class="row mb-4">
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="card shadow-sm text-center">
           <div class="card-body">
             <h6 class="text-muted">Ultimo Cobro (Euros)</h6>
@@ -142,7 +144,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="card shadow-sm text-center">
           <div class="card-body">
             <h6 class="text-muted">Total Historico (Euros)</h6>
@@ -150,15 +152,24 @@
           </div>
         </div>
       </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm text-center">
+          <div class="card-body">
+            <h6 class="text-muted">Tramites Supervivencia</h6>
+            <h3 id="total-supervivencias">--</h3>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Tabla de movimientos -->
     <div class="card shadow-sm">
       <div class="card-header bg-white">
         <h5 class="mb-0">Ultimos Movimientos</h5>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-striped mb-0">
+          < paneltable class="table table-striped mb-0">
             <thead>
               <tr>
                 <th>Fecha Recibo</th>
@@ -190,7 +201,7 @@
         await new Promise(r => setTimeout(r, 200));
         intentos++;
         if (intentos > 20) {
-          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar.</td></tr>';
+          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar a la base de datos.</td></tr>';
           return;
         }
       }
@@ -204,9 +215,11 @@
 
       const app = document.getElementById('tabla-cobros');
       try {
+        // Cargar ultimos 10 cobros (excluyendo tramites de supervivencia)
         const { data, error } = await window.db
           .from('cobros')
           .select('*')
+          .not('banco_detalle', 'ilike', '%supervivencia%')
           .order('recibo_vision_fecha', { ascending: false })
           .limit(10);
 
@@ -214,39 +227,74 @@
         
         if (!data || data.length === 0) {
           app.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay datos registrados.</td></tr>';
-          return;
+        } else {
+          let html = '';
+          let totalEuros = 0;
+          
+          data.forEach(cobro => {
+            if (cobro.monto_euros) totalEuros += parseFloat(cobro.monto_euros);
+            
+            html += `
+              <tr>
+                <td>${cobro.recibo_vision_fecha || '-'}</td>
+                <td>$${cobro.monto_pesos ? cobro.monto_pesos.toLocaleString('es-AR') : '-'}</td>
+                <td>EUR ${cobro.monto_euros ? cobro.monto_euros.toLocaleString('es-ES') : '-'}</td>
+                <td><small>${cobro.banco_detalle || '-'}</small></td>
+              </tr>`;
+          });
+          app.innerHTML = html;
+
+          const ultimo = data[0];
+          document.getElementById('ultimo-cobro').innerText = `EUR ${ultimo.monto_euros ? ultimo.monto_euros.toLocaleString('es-ES') : 'Pendiente'}`;
+          document.getElementById('total-historico').innerText = `EUR ${totalEuros.toLocaleString('es-ES')}`;
         }
 
-        let html = '';
-        let totalEuros = 0;
+        // Contar tramites de supervivencia
+        const { count } = await window.db
+          .from('cobros')
+          .select('*', { count: 'exact', head: true })
+          .ilike('banco_detalle', '%supervivencia%');
         
-        data.forEach(cobro => {
-          if (cobro.monto_euros) totalEuros += parseFloat(cobro.monto_euros);
+        document.getElementById('total-supervivencias').innerText = count || 0;
+
+        // SemÃ¡foro de supervivencia
+        const { data: supData } = await window.db
+          .from('cobros')
+          .select('supervivencia_enviada')
+          .ilike('banco_detalle', '%supervivencia%')
+          .not('supervivencia_enviada', 'is', null)
+          .order('supervivencia_enviada', { ascending: false })
+          .limit(1);
+
+        if (supData && supData.length > 0) {
+          const fechaUltimo = new Date(supData[0].supervivencia_enviada);
+          const proximo = new Date(fechaUltimo);
+          proximo.setMonth(proximo.getMonth() + 5);
           
-          html += `
-            <tr>
-              <td>${cobro.recibo_vision_fecha || '-'}</td>
-              <td>$${cobro.monto_pesos ? cobro.monto_pesos.toLocaleString('es-AR') : '-'}</td>
-              <td>EUR ${cobro.monto_euros ? cobro.monto_euros.toLocaleString('es-ES') : '-'}</td>
-              <td><small>${cobro.banco_detalle || '-'}</small></td>
-            </tr>`;
-        });
-        app.innerHTML = html;
-
-        const ultimo = data[0];
-        document.getElementById('ultimo-cobro').innerText = `EUR ${ultimo.monto_euros ? ultimo.monto_euros.toLocaleString('es-ES') : 'Pendiente'}`;
-        document.getElementById('total-historico').innerText = `EUR ${totalEuros.toLocaleString('es-ES')}`;
-
-        const fechaUltimo = new Date(ultimo.recibo_vision_fecha);
-        fechaUltimo.setMonth(fechaUltimo.getMonth() + 5);
-        
-        const panel = document.getElementById('panel-supervivencia');
-        panel.className = 'card mb-4 shadow-sm border-success';
-        panel.querySelector('.card-body').classList.add('bg-success', 'text-white');
-        
-        document.getElementById('supervivencia-texto').innerHTML = `
-          <strong>Todo en orden</strong><br>
-          Proximo tramite estimado: <strong>${fechaUltimo.toLocaleDateString('es-ES')}</strong>`;
+          const hoy = new Date();
+          const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
+          
+          const panel = document.getElementById('panel-supervivencia');
+          const texto = document.getElementById('supervivencia-texto');
+          
+          if (diffDias < 0) {
+            panel.className = 'card mb-4 shadow-sm bg-danger text-white';
+            texto.innerHTML = `<strong>URGENTE!</strong> Tramite vencido hace ${Math.abs(diffDias)} dias.<br>Proximo tramite era: ${proximo.toLocaleDateString('es-ES')}`;
+          } else if (diffDias <= 30) {
+            panel.className = 'card mb-4 shadow-sm bg-danger text-white';
+            texto.innerHTML = `<strong>URGENTE!</strong> Quedan ${diffDias} dias.<br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')}`;
+          } else if (diffDias <= 60) {
+            panel.className = 'card mb-4 shadow-sm bg-warning text-dark';
+            texto.innerHTML = `<strong>ATENCION:</strong> Quedan ${diffDias} dias.<br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')}`;
+          } else {
+            panel.className = 'card mb-4 shadow-sm bg-success text-white';
+            texto.innerHTML = `<strong>Todo en orden</strong><br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')} (en ${diffDias} dias)`;
+          }
+        } else {
+          const = document.getElementById('panel-supervivencia');
+          panel.className = 'card mb-4 shadow-sm bg-warning text-dark';
+          document.getElementById('supervivencia-texto').innerHTML = '<strong>Sin registro de supervivencia</strong><br>Registra el primer tramite para empezar el control.';
+        }
 
         setTimeout(verificarBackup, 1000);
 
