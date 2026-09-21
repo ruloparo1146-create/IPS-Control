@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ips-control-v7';  // Actualizamos version
+const CACHE_NAME = 'ips-control-v8';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const APP_ASSETS = [
   './calculadora.html',
   './historial.html',
   './supervivencia.html',
+  './graficos.html',
   './css/style.css',
   './js/config.js',
   './js/supabase.js',
