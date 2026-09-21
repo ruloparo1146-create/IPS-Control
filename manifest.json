@@ -1,0 +1,9 @@
+{
+  "name": "IPS Control",
+  "short_name": "IPS Control",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f4f9",
+  "theme_color": "#0d6efd",
+  "icons": []
+}
