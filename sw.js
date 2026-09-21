@@ -6,11 +6,7 @@ const APP_ASSETS = [
   './css/style.css',
   './js/config.js',
   './js/supabase.js',
-  './js/auth.js',
-  './datos/historico.csv',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './js/auth.js'
 ];
 
 self.addEventListener('install', event => {
