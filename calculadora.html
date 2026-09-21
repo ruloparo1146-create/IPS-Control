@@ -7,13 +7,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     .bg-ips { background-color: #50B9C0 !important; }
+    .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
+    .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
   </style>
 </head>
 <body class="bg-light">
   
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
-      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">â† Volver al Panel</a>
+      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
     </div>
   </nav>
 
@@ -22,7 +24,7 @@
       <div class="col-md-8">
         <div class="card shadow-sm">
           <div class="card-header bg-white">
-            <h4 class="mb-0">ðŸ§® Nueva ConversiÃ³n de Cobro</h4>
+            <h4 class="mb-0">Nueva Conversion de Cobro</h4>
           </div>
           <div class="card-body">
             <form id="form-calculadora">
@@ -40,17 +42,17 @@
 
               <div class="row mb-3">
                 <div class="col-md-8">
-                  <label class="form-label">CotizaciÃ³n del Euro (Venta)</label>
+                  <label class="form-label">Cotizacion del Euro (Venta)</label>
                   <input type="number" step="0.01" id="cotizacion" class="form-control" required placeholder="Ej: 1756">
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                  <button type="button" class="btn btn-outline-secondary w-100" onclick="traerCotizacion()">ðŸ”„ Traer</button>
+                  <button type="button" class="btn btn-outline-secondary w-100" onclick="traerCotizacion()">Traer</button>
                 </div>
               </div>
 
               <div class="row mb-3">
                 <div class="col-md-6">
-                  <label class="form-label">ComisiÃ³n Banco (%)</label>
+                  <label class="form-label">Comision Banco (%)</label>
                   <input type="number" step="0.01" id="comision" class="form-control" value="1.5" required>
                 </div>
                 <div class="col-md-6">
@@ -65,7 +67,7 @@
               </div>
 
               <div class="d-grid gap-2">
-                <button type="button" class="btn btn-ips btn-lg text-white" style="background-color:#50B9C0;" onclick="calcular()">Calcular</button>
+                <button type="button" class="btn btn-ips btn-lg" onclick="calcular()">Calcular</button>
               </div>
             </form>
 
@@ -78,12 +80,12 @@
                   <h3 id="res-bruto" class="text-primary">--</h3>
                 </div>
                 <div class="col-md-6">
-                  <h6 class="text-muted">Neto despuÃ©s de ComisiÃ³n</h6>
+                  <h6 class="text-muted">Neto despues de Comision</h6>
                   <h3 id="res-neto" class="text-success">--</h3>
                 </div>
               </div>
               <div class="d-grid mt-3">
-                <button class="btn btn-success btn-lg" onclick="guardarCobro()">ðŸ’¾ Guardar en Base de Datos</button>
+                <button class="btn btn-success btn-lg" onclick="guardarCobro()">Guardar en Base de Datos</button>
               </div>
               <div id="mensaje-guardado" class="text-center mt-2"></div>
             </div>
@@ -107,7 +109,7 @@
       const hoy = new Date().toISOString().split('T')[0];
       document.getElementById('fecha_recibo').value = hoy;
 
-      // Verificar sesiÃ³n
+      // Verificar sesion
       let intentos = 0;
       while (typeof window.db === 'undefined') {
         await new Promise(r => setTimeout(r, 200));
@@ -120,20 +122,19 @@
 
     async function traerCotizacion() {
       const btn = event.target;
-      btn.innerText = '...';
+      btn.innerText = 'Buscando...';
       try {
-        // API pÃºblica para el Euro (puede variar)
         const res = await fetch('https://api.bluelytics.com.ar/v1/latest?type=euro');
         const data = await res.json();
         if (data && data.venta) {
           document.getElementById('cotizacion').value = data.venta;
         } else {
-          alert('No se pudo obtener la cotizaciÃ³n automÃ¡ticamente. Ingresala a mano.');
+          alert('No se pudo obtener la cotizacion. Ingresala a mano.');
         }
       } catch (e) {
-        alert('Error al conectar con la API. IngresÃ¡ la cotizaciÃ³n a mano.');
+        alert('Error al conectar con la API. Ingresa la cotizacion a mano.');
       }
-      btn.innerText = 'ðŸ”„ Traer';
+      btn.innerText = 'Traer';
     }
 
     function calcular() {
@@ -142,7 +143,7 @@
       const comision = parseFloat(document.getElementById('comision').value);
 
       if (!pesos || !cotizacion) {
-        alert('Por favor, completÃ¡ los campos obligatorios.');
+        alert('Por favor, completa los campos obligatorios.');
         return;
       }
 
@@ -180,7 +181,7 @@
       if (error) {
         msg.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
       } else {
-        msg.innerHTML = `<span class="text-success">Â¡Guardado con Ã©xito! Redirigiendo...</span>`;
+        msg.innerHTML = `<span class="text-success">Guardado con exito! Redirigiendo...</span>`;
         setTimeout(() => window.location.href = 'index.html', 1500);
       }
     }
