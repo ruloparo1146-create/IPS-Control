@@ -10,23 +10,16 @@
     .bg-ips { background-color: #50B9C0 !important; }
     .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
     .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
-    .btn-sm-custom { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
     .card { background-color: #ffffff; }
     .resultado-editable {
       border: 2px dashed #28a745 !important;
       background-color: #f8fff9 !important;
     }
-    .badge-editable {
-      font-size: 0.7rem;
-      background-color: #fff3cd;
-      color: #856404;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
+    #info-cotizacion { font-size: 0.85rem; }
   </style>
 </head>
 <body>
-  
+
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
       <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
@@ -41,141 +34,112 @@
             <h4 class="mb-0">Calculo de Ingreso Mensual</h4>
           </div>
           <div class="card-body">
-            <form id="form-calculadora">
-              
-              <!-- Selector de moneda -->
-              <div class="mb-3">
-                <label class="form-label"><strong>Moneda de destino</strong></label>
-                <div class="btn-group w-100" role="group">
-                  <input type="radio" class="btn-check" name="moneda" id="moneda_eur" value="EUR" checked onchange="cambiarMoneda()">
-                  <label class="btn btn-outline-primary" for="moneda_eur">EUR (Euro)</label>
-                  
-                  <input type="radio" class="btn-check" name="moneda" id="moneda_usd" value="USD" onchange="cambiarMoneda()">
-                  <label class="btn btn-outline-success" for="moneda_usd">USD (Dolar)</label>
-                </div>
-              </div>
 
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">Monto en Pesos (ARS)</label>
-                  <input type="number" step="0.01" id="monto_pesos" class="form-control" required placeholder="Ej: 1274064.93">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Fecha del Recibo IPS</label>
-                  <input type="date" id="fecha_recibo" class="form-control" required>
-                </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Monto en Pesos (ARS)</label>
+                <input type="number" step="0.01" id="monto_pesos" class="form-control" required placeholder="Ej: 1274064.93">
               </div>
-
-              <!-- Cotizacion -->
-              <div class="card bg-light mb-3">
-                <div class="card-body">
-                  <label class="form-label"><strong>Cotizacion del <span id="label-moneda">Euro</span></strong></label>
-                  <div class="row g-2 mb-2">
-                    <div class="col-12">
-                      <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Ingresa o trae la cotizacion">
-                    </div>
-                  </div>
-                  <div class="row g-2">
-                    <div class="col-md-6">
-                      <button type="button" class="btn btn-outline-primary w-100 btn-sm-custom" onclick="traerCotizacionBCRA()">
-                        Banco Central
-                      </button>
-                    </div>
-                    <div class="col-md-6">
-                      <button type="button" class="btn btn-outline-info w-100 btn-sm-custom" onclick="traerCotizacionInfoDolar()">
-                        InfoDolar
-                      </button>
-                    </div>
-                  </div>
-                  <div id="info-cotizacion" class="form-text mt-2"></div>
-                </div>
+              <div class="col-md-6">
+                <label class="form-label">Fecha del Recibo IPS</label>
+                <input type="date" id="fecha_recibo" class="form-control" required>
               </div>
-
-              <!-- Comisiones fijas -->
-              <div class="card bg-light mb-3">
-                <div class="card-body">
-                  <h6 class="text-muted mb-3">Comisiones Fijas (en <span id="label-moneda-com">Euros</span>)</h6>
-                  <div class="row mb-2">
-                    <div class="col-md-6">
-                      <label class="form-label small">Banco Provincia de Bs As</label>
-                      <input type="number" step="0.01" id="comision_arg" class="form-control" value="20">
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label small">Banco de Italia</label>
-                      <input type="number" step="0.01" id="comision_ita" class="form-control" value="15">
-                    </div>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="usar_comisiones" checked>
-                    <label class="form-check-label small" for="usar_comisiones">
-                      Descontar comisiones fijas
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">Fecha Estimada de Cobro</label>
-                  <input type="date" id="fecha_transferencia" class="form-control">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Observaciones (opcional)</label>
-                  <input type="text" id="obs" class="form-control" placeholder="Ej: Aguinaldo + Sueldo">
-                </div>
-              </div>
-
-              <div class="d-grid gap-2">
-                <button type="button" class="btn btn-ips btn-lg" onclick="calcular()">Calcular</button>
-              </div>
-            </form>
-
-            <!-- Resultados -->
-            <div id="resultados" class="mt-4" style="display:none;">
-              <hr>
-              <h5 class="text-center mb-3">Resultados</h5>
-              
-              <div class="row text-center mb-3">
-                <div class="col-md-4">
-                  <div class="card bg-light">
-                    <div class="card-body">
-                      <h6 class="text-muted mb-1">Total Bruto</h6>
-                      <h4 id="res-bruto" class="text-secondary mb-0">--</h4>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="card bg-light">
-                    <div class="card-body">
-                      <h6 class="text-muted mb-1">Total Comisiones</h6>
-                      <h4 id="res-comision" class="text-danger mb-0">--</h4>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="card border-success">
-                    <div class="card-body">
-                      <h6 class="text-muted mb-1">
-                        NETO FINAL 
-                        <span class="badge-editable" title="Editable - pone el valor real que te llego">editable</span>
-                      </h6>
-                      <input type="number" step="0.01" id="res-neto-editable" class="form-control form-control-lg text-center text-success fw-bold resultado-editable" style="font-size: 1.5rem;">
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="alert alert-info small">
-                <strong>Consejo:</strong> Si el valor que te llego a Italia es distinto al calculado, editalo en el campo verde "NETO FINAL" antes de guardar. Se guardara el valor real.
-              </div>
-
-              <div class="d-grid mt-3">
-                <button class="btn btn-success btn-lg" onclick="guardarCobro()">Guardar en Base de Datos</button>
-              </div>
-              <div id="mensaje-guardado" class="text-center mt-2"></div>
             </div>
 
+            <div class="card bg-light mb-3">
+              <div class="card-body">
+                <label class="form-label"><strong>Cotizacion del Euro Oficial</strong></label>
+                <div class="row g-2 mb-2">
+                  <div class="col-12">
+                    <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Ingresa o trae la cotizacion">
+                  </div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-12">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="traerCotizacionOficial()">
+                      Traer Cotizacion Oficial (BCRA)
+                    </button>
+                  </div>
+                </div>
+                <div id="info-cotizacion" class="mt-2"></div>
+              </div>
+            </div>
+
+            <div class="card bg-light mb-3">
+              <div class="card-body">
+                <h6 class="text-muted mb-3">Comisiones Fijas (en Euros)</h6>
+                <div class="row mb-2">
+                  <div class="col-md-6">
+                    <label class="form-label small">Banco Provincia de Bs As</label>
+                    <input type="number" step="0.01" id="comision_arg" class="form-control" value="20">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Banco de Italia</label>
+                    <input type="number" step="0.01" id="comision_ita" class="form-control" value="15">
+                  </div>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="usar_comisiones" checked>
+                  <label class="form-check-label small" for="usar_comisiones">
+                    Descontar comisiones fijas
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Fecha Estimada de Cobro (Italia)</label>
+                <input type="date" id="fecha_transferencia" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Observaciones (opcional)</label>
+                <input type="text" id="obs" class="form-control" placeholder="Ej: Aguinaldo + Sueldo">
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="button" class="btn btn-ips btn-lg" onclick="calcular()">Calcular</button>
+            </div>
           </div>
+
+          <div id="resultados" class="mt-4" style="display:none;">
+            <hr>
+            <h5 class="text-center mb-3">Resultados</h5>
+
+            <div class="row text-center mb-3">
+              <div class="col-md-4">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="text-muted mb-1">Total Bruto</h6>
+                    <h4 id="res-bruto" class="text-secondary mb-0">--</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="text-muted mb-1">Total Comisiones</h6>
+                    <h4 id="res-comision" class="text-danger mb-0">--</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card border-success">
+                  <div class="card-body">
+                    <h6 class="text-muted mb-1">NETO FINAL (editable)</h6>
+                    <input type="number" step="0.01" id="res-neto-editable" class="form-control form-control-lg text-center text-success fw-bold resultado-editable">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid mt-3">
+              <button class="btn btn-success btn-lg" onclick="guardarCobro()">Guardar en Base de Datos</button>
+            </div>
+            <div id="mensaje-guardado" class="text-center mt-2"></div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -187,145 +151,85 @@
   <script src="js/auth.js"></script>
 
   <script>
-    let datosCalculados = null;
-    let monedaActual = 'EUR';
+    var datosCalculados = null;
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      const hoy = new Date().toISOString().split('T')[0];
-      document.getElementById('fecha_recibo').value = hoy;
+    document.addEventListener('DOMContentLoaded', async function() {
+      document.getElementById('fecha_recibo').value = new Date().toISOString().split('T')[0];
 
-      let intentos = 0;
+      var intentos = 0;
       while (typeof window.db === 'undefined') {
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(function(r) { setTimeout(r, 200); });
         intentos++;
         if (intentos > 20) return;
       }
-      const session = await verificarSesion();
+      var session = await verificarSesion();
       if (!session) window.location.href = 'login.html';
 
-      cargarComisionesGuardadas();
-    });
-
-    function cambiarMoneda() {
-      const radio = document.querySelector('input[name="moneda"]:checked');
-      monedaActual = radio.value;
-      
-      if (monedaActual === 'EUR') {
-        document.getElementById('label-moneda').innerText = 'Euro';
-        document.getElementById('label-moneda-com').innerText = 'Euros';
-      } else {
-        document.getElementById('label-moneda').innerText = 'Dolar';
-        document.getElementById('label-moneda-com').innerText = 'Dolares';
-      }
-      
-      document.getElementById('cotizacion').value = '';
-      document.getElementById('info-cotizacion').innerHTML = '';
-    }
-
-    function cargarComisionesGuardadas() {
-      const comArg = localStorage.getItem('ips_comision_arg');
-      const comIta = localStorage.getItem('ips_comision_ita');
+      var comArg = localStorage.getItem('ips_comision_arg');
+      var comIta = localStorage.getItem('ips_comision_ita');
       if (comArg) document.getElementById('comision_arg').value = comArg;
       if (comIta) document.getElementById('comision_ita').value = comIta;
-    }
+    });
 
     function guardarComisiones() {
       localStorage.setItem('ips_comision_arg', document.getElementById('comision_arg').value);
       localStorage.setItem('ips_comision_ita', document.getElementById('comision_ita').value);
     }
 
-    // ============ COTIZACION BCRA ============
-    async function traerCotizacionBCRA() {
-      const btn = event.target;
-      const textoOriginal = btn.innerText;
+    // ==== COTIZACION OFICIAL BCRA ====
+    async function traerCotizacionOficial() {
+      var btn = event.target;
+      var textoOriginal = btn.innerText;
       btn.innerText = 'Buscando...';
       btn.disabled = true;
-      const info = document.getElementById('info-cotizacion');
+      var info = document.getElementById('info-cotizacion');
+      info.innerHTML = '<span class="text-muted">Conectando con dolarapi.com...</span>';
 
       try {
-        let url;
-        if (monedaActual === 'EUR') {
-          url = 'https://dolarapi.com/v1/cotizaciones/euros';
-        } else {
-          url = 'https://dolarapi.com/v1/dolares/oficial';
+        var res = await fetch('https://dolarapi.com/v1/cotizaciones/euros');
+        console.log('Respuesta status:', res.status);
+
+        if (!res.ok) {
+          throw new Error('El servidor respondio con error ' + res.status);
         }
 
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        let valor = null;
+        var data = await res.json();
+        console.log('Datos recibidos:', data);
+
+        var euroOficial = null;
         if (Array.isArray(data)) {
-          const item = data.find(i => i.casa === 'oficial');
-          if (item && item.venta) valor = item.venta;
-        } else if (data && data.venta) {
-          valor = data.venta;
-        }
-
-        if (valor) {
-          document.getElementById('cotizacion').value = valor;
-          info.innerHTML = `<span class="text-success">Cotizacion BCRA (${monedaActual}): $${valor} (${new Date().toLocaleString('es-AR')})</span>`;
-        } else {
-          info.innerHTML = '<span class="text-danger">No se pudo obtener la cotizacion del BCRA.</span>';
-        }
-      } catch (e) {
-        info.innerHTML = '<span class="text-danger">Error al conectar con BCRA. Ingresa la cotizacion a mano.</span>';
-      }
-      btn.innerText = textoOriginal;
-      btn.disabled = false;
-    }
-
-    // ============ COTIZACION INFODOLAR ============
-    async function traerCotizacionInfoDolar() {
-      const btn = event.target;
-      const textoOriginal = btn.innerText;
-      btn.innerText = 'Buscando...';
-      btn.disabled = true;
-      const info = document.getElementById('info-cotizacion');
-
-      try {
-        const res = await fetch('https://api.infodolar.com/Json');
-        const data = await res.json();
-
-        let cotizacionProvincia = null;
-        let lista = [];
-
-        if (Array.isArray(data)) {
-          lista = data;
-        } else if (data && data.cotizaciones) {
-          lista = data.cotizaciones;
-        }
-
-        const provincia = lista.find(item => 
-          item.nombre && item.nombre.toLowerCase().includes('provincia')
-        );
-        
-        if (provincia) {
-          if (monedaActual === 'EUR' && provincia.venta_euro) {
-            cotizacionProvincia = provincia.venta_euro;
-          } else if (provincia.venta) {
-            cotizacionProvincia = provincia.venta;
+          for (var i = 0; i < data.length; i++) {
+            if (data[i].casa === 'oficial') {
+              euroOficial = data[i];
+              break;
+            }
           }
+        } else if (data && data.venta) {
+          euroOficial = data;
         }
 
-        if (cotizacionProvincia) {
-          document.getElementById('cotizacion').value = cotizacionProvincia;
-          info.innerHTML = `<span class="text-success">Cotizacion Banco Provincia (${monedaActual}): $${cotizacionProvincia} (${new Date().toLocaleString('es-AR')})</span>`;
+        if (euroOficial && euroOficial.venta) {
+          document.getElementById('cotizacion').value = euroOficial.venta;
+          info.innerHTML = '<span class="text-success">Cotizacion Oficial cargada: $' + euroOficial.venta + ' | Fecha: ' + new Date().toLocaleString('es-AR') + '</span>';
         } else {
-          info.innerHTML = '<span class="text-warning">No se encontro el Banco Provincia. Ingresa la cotizacion a mano.</span>';
+          info.innerHTML = '<span class="text-danger">No se encontro el valor "oficial". Ingresalo a mano.</span>';
         }
+
       } catch (e) {
-        info.innerHTML = '<span class="text-danger">Error al conectar con InfoDolar. Ingresa la cotizacion a mano.</span>';
+        console.error('Error al traer cotizacion:', e);
+        info.innerHTML = '<span class="text-danger">Error al conectar: ' + e.message + '. Ingresa la cotizacion a mano.</span>';
       }
+
       btn.innerText = textoOriginal;
       btn.disabled = false;
     }
 
     function calcular() {
-      const pesos = parseFloat(document.getElementById('monto_pesos').value);
-      const cotizacion = parseFloat(document.getElementById('cotizacion').value);
-      const comArg = parseFloat(document.getElementById('comision_arg').value) || 0;
-      const comIta = parseFloat(document.getElementById('comision_ita').value) || 0;
-      const usarComisiones = document.getElementById('usar_comisiones').checked;
+      var pesos = parseFloat(document.getElementById('monto_pesos').value);
+      var cotizacion = parseFloat(document.getElementById('cotizacion').value);
+      var comArg = parseFloat(document.getElementById('comision_arg').value) || 0;
+      var comIta = parseFloat(document.getElementById('comision_ita').value) || 0;
+      var usarComisiones = document.getElementById('usar_comisiones').checked;
 
       if (!pesos || !cotizacion) {
         alert('Por favor, completa el monto en pesos y la cotizacion.');
@@ -334,53 +238,42 @@
 
       guardarComisiones();
 
-      const bruto = pesos / cotizacion;
-      const totalComisiones = usarComisiones ? (comArg + comIta) : 0;
-      const neto = bruto - totalComisiones;
+      var bruto = pesos / cotizacion;
+      var totalComisiones = usarComisiones ? (comArg + comIta) : 0;
+      var neto = bruto - totalComisiones;
 
-      document.getElementById('res-bruto').innerText = `${monedaActual} ${bruto.toFixed(2)}`;
-      document.getElementById('res-comision').innerText = `- ${monedaActual} ${totalComisiones.toFixed(2)}`;
-      
-      // El campo editable del neto se pre-llena con el calculo
-      const netoEditable = document.getElementById('res-neto-editable');
-      netoEditable.value = neto.toFixed(2);
-      
+      document.getElementById('res-bruto').innerText = 'EUR ' + bruto.toFixed(2);
+      document.getElementById('res-comision').innerText = '- EUR ' + totalComisiones.toFixed(2);
+      document.getElementById('res-neto-editable').value = neto.toFixed(2);
       document.getElementById('resultados').style.display = 'block';
 
-      datosCalculados = { 
-        pesos, 
-        cotizacion, 
-        comArg, 
-        comIta, 
-        totalComisiones,
-        bruto, 
-        neto,
-        moneda: monedaActual
+      datosCalculados = {
+        pesos: pesos,
+        cotizacion: cotizacion,
+        comArg: comArg,
+        comIta: comIta,
+        totalComisiones: totalComisiones,
+        bruto: bruto,
+        neto: neto
       };
     }
 
     async function guardarCobro() {
       if (!datosCalculados) return;
-      const session = await verificarSesion();
+      var session = await verificarSesion();
       if (!session) return;
 
-      // Leer el valor real editado por el usuario
-      const netoReal = parseFloat(document.getElementById('res-neto-editable').value);
-      
-      if (!netoReal) {
-        alert('El campo NETO FINAL no puede estar vacio.');
-        return;
-      }
+      var netoReal = parseFloat(document.getElementById('res-neto-editable').value);
+      if (!netoReal) { alert('El campo NETO no puede estar vacio.'); return; }
 
-      const msg = document.getElementById('mensaje-guardado');
+      var msg = document.getElementById('mensaje-guardado');
       msg.innerText = 'Guardando...';
 
-      const obsUsuario = document.getElementById('obs').value || '';
-      const obsComision = `Com.Arg: ${datosCalculados.moneda}${datosCalculados.comArg} + Com.Ita: ${datosCalculados.moneda}${datosCalculados.comIta}`;
-      const obsFinal = obsUsuario ? `${obsUsuario} | ${obsComision}` : obsComision;
+      var obsUsuario = document.getElementById('obs').value || '';
+      var obsComision = 'Com.Arg: EUR' + datosCalculados.comArg + ' + Com.Ita: EUR' + datosCalculados.comIta;
+      var obsFinal = obsUsuario ? (obsUsuario + ' | ' + obsComision) : obsComision;
 
-      // Guardar el valor REAL del neto (el que edito el usuario)
-      const { error } = await window.db.from('cobros').insert([{
+      var result = await window.db.from('cobros').insert([{
         user_id: session.user.id,
         recibo_vision_fecha: document.getElementById('fecha_recibo').value,
         recibo_fecha_pago_arg: document.getElementById('fecha_recibo').value,
@@ -393,11 +286,11 @@
         obs: obsFinal
       }]);
 
-      if (error) {
-        msg.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+      if (result.error) {
+        msg.innerHTML = '<span class="text-danger">Error: ' + result.error.message + '</span>';
       } else {
-        msg.innerHTML = `<span class="text-success">Guardado con exito! Redirigiendo...</span>`;
-        setTimeout(() => window.location.href = 'index.html', 1500);
+        msg.innerHTML = '<span class="text-success">Guardado con exito! Redirigiendo...</span>';
+        setTimeout(function() { window.location.href = 'index.html'; }, 1500);
       }
     }
   </script>
