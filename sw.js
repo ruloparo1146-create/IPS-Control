@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ips-control-v10';
+const CACHE_NAME = 'ips-control-v11';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const APP_ASSETS = [
   './historial.html',
   './supervivencia.html',
   './graficos.html',
+  './manual.html',
   './css/style.css',
   './js/config.js',
   './js/supabase.js',
