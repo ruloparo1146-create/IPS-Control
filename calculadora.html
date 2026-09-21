@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPS Control - Calculadora</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .bg-ips { background-color: #50B9C0 !important; }
+  </style>
+</head>
+<body class="bg-light">
+  
+  <nav class="navbar navbar-dark bg-ips mb-4">
+    <div class="container">
+      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">â† Volver al Panel</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">ðŸ§® Nueva ConversiÃ³n de Cobro</h4>
+          </div>
+          <div class="card-body">
+            <form id="form-calculadora">
+              
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Monto en Pesos (ARS)</label>
+                  <input type="number" step="0.01" id="monto_pesos" class="form-control" required placeholder="Ej: 1274064.93">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Fecha del Recibo IPS</label>
+                  <input type="date" id="fecha_recibo" class="form-control" required>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <label class="form-label">CotizaciÃ³n del Euro (Venta)</label>
+                  <input type="number" step="0.01" id="cotizacion" class="form-control" required placeholder="Ej: 1756">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <button type="button" class="btn btn-outline-secondary w-100" onclick="traerCotizacion()">ðŸ”„ Traer</button>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">ComisiÃ³n Banco (%)</label>
+                  <input type="number" step="0.01" id="comision" class="form-control" value="1.5" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Fecha Estimada de Cobro (Italia)</label>
+                  <input type="date" id="fecha_transferencia" class="form-control">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Observaciones (opcional)</label>
+                <input type="text" id="obs" class="form-control" placeholder="Ej: Aguinaldo + Sueldo">
+              </div>
+
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-ips btn-lg text-white" style="background-color:#50B9C0;" onclick="calcular()">Calcular</button>
+              </div>
+            </form>
+
+            <!-- Resultados -->
+            <div id="resultados" class="mt-4" style="display:none;">
+              <hr>
+              <div class="row text-center">
+                <div class="col-md-6">
+                  <h6 class="text-muted">Total Bruto en Euros</h6>
+                  <h3 id="res-bruto" class="text-primary">--</h3>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-muted">Neto despuÃ©s de ComisiÃ³n</h6>
+                  <h3 id="res-neto" class="text-success">--</h3>
+                </div>
+              </div>
+              <div class="d-grid mt-3">
+                <button class="btn btn-success btn-lg" onclick="guardarCobro()">ðŸ’¾ Guardar en Base de Datos</button>
+              </div>
+              <div id="mensaje-guardado" class="text-center mt-2"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    let datosCalculados = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Poner fecha de hoy por defecto
+      const hoy = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha_recibo').value = hoy;
+
+      // Verificar sesiÃ³n
+      let intentos = 0;
+      while (typeof window.db === 'undefined') {
+        await new Promise(r => setTimeout(r, 200));
+        intentos++;
+        if (intentos > 20) return;
+      }
+      const session = await verificarSesion();
+      if (!session) window.location.href = 'login.html';
+    });
+
+    async function traerCotizacion() {
+      const btn = event.target;
+      btn.innerText = '...';
+      try {
+        // API pÃºblica para el Euro (puede variar)
+        const res = await fetch('https://api.bluelytics.com.ar/v1/latest?type=euro');
+        const data = await res.json();
+        if (data && data.venta) {
+          document.getElementById('cotizacion').value = data.venta;
+        } else {
+          alert('No se pudo obtener la cotizaciÃ³n automÃ¡ticamente. Ingresala a mano.');
+        }
+      } catch (e) {
+        alert('Error al conectar con la API. IngresÃ¡ la cotizaciÃ³n a mano.');
+      }
+      btn.innerText = 'ðŸ”„ Traer';
+    }
+
+    function calcular() {
+      const pesos = parseFloat(document.getElementById('monto_pesos').value);
+      const cotizacion = parseFloat(document.getElementById('cotizacion').value);
+      const comision = parseFloat(document.getElementById('comision').value);
+
+      if (!pesos || !cotizacion) {
+        alert('Por favor, completÃ¡ los campos obligatorios.');
+        return;
+      }
+
+      const bruto = pesos / cotizacion;
+      const neto = bruto - (bruto * (comision / 100));
+
+      document.getElementById('res-bruto').innerText = `EUR ${bruto.toFixed(2)}`;
+      document.getElementById('res-neto').innerText = `EUR ${neto.toFixed(2)}`;
+      document.getElementById('resultados').style.display = 'block';
+
+      datosCalculados = { pesos, cotizacion, comision, bruto, neto };
+    }
+
+    async function guardarCobro() {
+      if (!datosCalculados) return;
+      const session = await verificarSesion();
+      if (!session) return;
+
+      const msg = document.getElementById('mensaje-guardado');
+      msg.innerText = 'Guardando...';
+
+      const { error } = await window.db.from('cobros').insert([{
+        user_id: session.user.id,
+        recibo_vision_fecha: document.getElementById('fecha_recibo').value,
+        recibo_fecha_pago_arg: document.getElementById('fecha_recibo').value,
+        monto_pesos: datosCalculados.pesos,
+        transferencia_fecha: document.getElementById('fecha_transferencia').value || null,
+        monto_euros: datosCalculados.neto,
+        cotizacion_banco_euro: datosCalculados.cotizacion,
+        cotizacion_calculada_euro: datosCalculados.cotizacion,
+        banco_detalle: 'Banco 1140 - Pago Ext.',
+        obs: document.getElementById('obs').value
+      }]);
+
+      if (error) {
+        msg.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+      } else {
+        msg.innerHTML = `<span class="text-success">Â¡Guardado con Ã©xito! Redirigiendo...</span>`;
+        setTimeout(() => window.location.href = 'index.html', 1500);
+      }
+    }
+  </script>
+</body>
+</html>
