@@ -260,7 +260,7 @@
       const aviso = document.getElementById('aviso-backup');
       if (!ultimoBackup) { aviso.classList.remove('d-none'); return; }
       const diasSinBackup = Math.floor((new Date() - new Date(ultimoBackup)) / (1000 * 60 * 60 * 24));
-      if (diasSinBackup >= 365) { aviso.classList.remove('d-none'); }
+      if (diasSinBackup >= 30) { aviso.classList.remove('d-none'); }
     }
 
     async function backupRapido() {
