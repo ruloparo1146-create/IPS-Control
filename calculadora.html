@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPS Control - Calculadora</title>
+  <title>IPS Control - Ingreso Mensual</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     .bg-ips { background-color: #50B9C0 !important; }
@@ -24,11 +24,12 @@
       <div class="col-md-8">
         <div class="card shadow-sm">
           <div class="card-header bg-white">
-            <h4 class="mb-0">Nueva Conversion de Cobro</h4>
+            <h4 class="mb-0">Calculo de Ingreso Mensual</h4>
           </div>
           <div class="card-body">
             <form id="form-calculadora">
               
+              <!-- Datos principales -->
               <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Monto en Pesos (ARS)</label>
@@ -50,20 +51,38 @@
                 </div>
               </div>
 
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">Comision Banco (%)</label>
-                  <input type="number" step="0.01" id="comision" class="form-control" value="1.5" required>
+              <!-- Comisiones fijas -->
+              <div class="card bg-light mb-3">
+                <div class="card-body">
+                  <h6 class="text-muted mb-3">Comisiones Fijas (en Euros)</h6>
+                  <div class="row mb-2">
+                    <div class="col-md-6">
+                      <label class="form-label small">Banco Provincia de Bs As</label>
+                      <input type="number" step="0.01" id="comision_arg" class="form-control" value="20">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small">Banco de Italia</label>
+                      <input type="number" step="0.01" id="comision_ita" class="form-control" value="15">
+                    </div>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="usar_comisiones" checked>
+                    <label class="form-check-label small" for="usar_comisiones">
+                      Descontar comisiones fijas
+                    </label>
+                  </div>
                 </div>
+              </div>
+
+              <div class="row mb-3">
                 <div class="col-md-6">
                   <label class="form-label">Fecha Estimada de Cobro (Italia)</label>
                   <input type="date" id="fecha_transferencia" class="form-control">
                 </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Observaciones (opcional)</label>
-                <input type="text" id="obs" class="form-control" placeholder="Ej: Aguinaldo + Sueldo">
+                <div class="col-md-6">
+                  <label class="form-label">Observaciones (opcional)</label>
+                  <input type="text" id="obs" class="form-control" placeholder="Ej: Aguinaldo + Sueldo">
+                </div>
               </div>
 
               <div class="d-grid gap-2">
@@ -74,16 +93,35 @@
             <!-- Resultados -->
             <div id="resultados" class="mt-4" style="display:none;">
               <hr>
-              <div class="row text-center">
-                <div class="col-md-6">
-                  <h6 class="text-muted">Total Bruto en Euros</h6>
-                  <h3 id="res-bruto" class="text-primary">--</h3>
+              <h5 class="text-center mb-3">Resultados</h5>
+              
+              <div class="row text-center mb-3">
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h6 class="text-muted mb-1">Total Bruto</h6>
+                      <h4 id="res-bruto" class="text-secondary mb-0">--</h4>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-6">
-                  <h6 class="text-muted">Neto despues de Comision</h6>
-                  <h3 id="res-neto" class="text-success">--</h3>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h6 class="text-muted mb-1">Total Comisiones</h6>
+                      <h4 id="res-comision" class="text-danger mb-0">--</h4>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card border-success">
+                    <div class="card-body">
+                      <h6 class="text-muted mb-1">NETO FINAL</h6>
+                      <h4 id="res-neto" class="text-success mb-0">--</h4>
+                    </div>
+                  </div>
                 </div>
               </div>
+
               <div class="d-grid mt-3">
                 <button class="btn btn-success btn-lg" onclick="guardarCobro()">Guardar en Base de Datos</button>
               </div>
@@ -116,17 +154,31 @@
       }
       const session = await verificarSesion();
       if (!session) window.location.href = 'login.html';
+
+      // Cargar comisiones guardadas del usuario (si existen)
+      cargarComisionesGuardadas();
     });
+
+    // Guardar y cargar comisiones personalizadas
+    function cargarComisionesGuardadas() {
+      const comArg = localStorage.getItem('ips_comision_arg');
+      const comIta = localStorage.getItem('ips_comision_ita');
+      if (comArg) document.getElementById('comision_arg').value = comArg;
+      if (comIta) document.getElementById('comision_ita').value = comIta;
+    }
+
+    function guardarComisiones() {
+      localStorage.setItem('ips_comision_arg', document.getElementById('comision_arg').value);
+      localStorage.setItem('ips_comision_ita', document.getElementById('comision_ita').value);
+    }
 
     async function traerCotizacion() {
       const btn = event.target;
       btn.innerText = 'Buscando...';
       try {
-        // API DolarAPI - Cotizacion Euro Oficial
         const res = await fetch('https://dolarapi.com/v1/cotizaciones/euros');
         const data = await res.json();
         
-        // Buscar el tipo "oficial"
         const euroOficial = data.find(item => item.casa === 'oficial');
         
         if (euroOficial && euroOficial.venta) {
@@ -143,21 +195,38 @@
     function calcular() {
       const pesos = parseFloat(document.getElementById('monto_pesos').value);
       const cotizacion = parseFloat(document.getElementById('cotizacion').value);
-      const comision = parseFloat(document.getElementById('comision').value);
+      const comArg = parseFloat(document.getElementById('comision_arg').value) || 0;
+      const comIta = parseFloat(document.getElementById('comision_ita').value) || 0;
+      const usarComisiones = document.getElementById('usar_comisiones').checked;
 
       if (!pesos || !cotizacion) {
-        alert('Por favor, completa los campos obligatorios.');
+        alert('Por favor, completa el monto en pesos y la cotizacion.');
         return;
       }
 
-      const bruto = pesos / cotizacion;
-      const neto = bruto - (bruto * (comision / 100));
+      // Guardar comisiones para la proxima vez
+      guardarComisiones();
 
+      // Calculo
+      const bruto = pesos / cotizacion;
+      const totalComisiones = usarComisiones ? (comArg + comIta) : 0;
+      const neto = bruto - totalComisiones;
+
+      // Mostrar resultados
       document.getElementById('res-bruto').innerText = `EUR ${bruto.toFixed(2)}`;
+      document.getElementById('res-comision').innerText = `- EUR ${totalComisiones.toFixed(2)}`;
       document.getElementById('res-neto').innerText = `EUR ${neto.toFixed(2)}`;
       document.getElementById('resultados').style.display = 'block';
 
-      datosCalculados = { pesos, cotizacion, comision, bruto, neto };
+      datosCalculados = { 
+        pesos, 
+        cotizacion, 
+        comArg, 
+        comIta, 
+        totalComisiones,
+        bruto, 
+        neto 
+      };
     }
 
     async function guardarCobro() {
@@ -167,6 +236,11 @@
 
       const msg = document.getElementById('mensaje-guardado');
       msg.innerText = 'Guardando...';
+
+      // Armar detalle de observaciones incluyendo las comisiones
+      const obsUsuario = document.getElementById('obs').value || '';
+      const obsComision = `Com.Arg: EUR${datosCalculados.comArg} + Com.Ita: EUR${datosCalculados.comIta}`;
+      const obsFinal = obsUsuario ? `${obsUsuario} | ${obsComision}` : obsComision;
 
       const { error } = await window.db.from('cobros').insert([{
         user_id: session.user.id,
@@ -178,7 +252,7 @@
         cotizacion_banco_euro: datosCalculados.cotizacion,
         cotizacion_calculada_euro: datosCalculados.cotizacion,
         banco_detalle: 'Banco 1140 - Pago Ext.',
-        obs: document.getElementById('obs').value
+        obs: obsFinal
       }]);
 
       if (error) {
