@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -41,21 +41,17 @@
               <div class="card-body">
                 <label class="form-label"><strong>Moneda de destino</strong></label>
                 <div class="row g-2">
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_eur" value="EUR" checked onchange="cambiarMoneda()">
                     <label class="btn btn-outline-primary w-100 moneda-btn" for="mon_eur">EUR</label>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_usd" value="USD" onchange="cambiarMoneda()">
                     <label class="btn btn-outline-success w-100 moneda-btn" for="mon_usd">USD</label>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_brl" value="BRL" onchange="cambiarMoneda()">
                     <label class="btn btn-outline-warning w-100 moneda-btn" for="mon_brl">BRL</label>
-                  </div>
-                  <div class="col-md-3">
-                    <input type="radio" class="btn-check" name="moneda" id="mon_cny" value="CNY" onchange="cambiarMoneda()">
-                    <label class="btn btn-outline-danger w-100 moneda-btn" for="mon_cny">CNY</label>
                   </div>
                 </div>
                 <small class="text-muted d-block mt-2" id="moneda-ayuda">Euro - Union Europea</small>
@@ -181,12 +177,11 @@
     var datosCalculados = null;
     var monedaActual = 'EUR';
 
-    // Configuracion por moneda
+    // Configuracion por moneda (sin CNY)
     var MONEDAS = {
       EUR: { nombre: 'Euro', plural: 'Euros', endpoint: 'eur', descripcion: 'Euro - Union Europea' },
       USD: { nombre: 'Dolar', plural: 'Dolares', endpoint: 'usd', descripcion: 'Dolar - Estados Unidos' },
-      BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' },
-      CNY: { nombre: 'Yuan', plural: 'Yuanes', endpoint: 'cny', descripcion: 'Yuan - China' }
+      BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' }
     };
 
     document.addEventListener('DOMContentLoaded', async function() {
@@ -238,8 +233,6 @@
       info.innerHTML = '<span class="text-muted">Conectando con dolarapi.com...</span>';
 
       try {
-        // DolarAPI tiene endpoints para eur, brl, cny
-        // Para USD se usa otro endpoint
         var url;
         if (monedaActual === 'USD') {
           url = 'https://dolarapi.com/v1/dolares/oficial';
@@ -258,7 +251,6 @@
         var data = await res.json();
         console.log('Datos recibidos:', data);
 
-        // Extraer el valor de venta
         var valorVenta = null;
         var dataObj = Array.isArray(data) ? data[0] : data;
 
@@ -341,7 +333,7 @@
         recibo_vision_fecha: document.getElementById('fecha_recibo').value,
         recibo_fecha_pago_arg: document.getElementById('fecha_recibo').value,
         monto_pesos: datosCalculados.pesos,
-        transferencia_fecha: document.getElementById('transferencia_fecha').value || null,
+        transferencia_fecha: document.getElementById('fecha_transferencia').value || null,
         monto_euros: netoReal,
         cotizacion_banco_euro: datosCalculados.cotizacion,
         cotizacion_calculada_euro: datosCalculados.cotizacion,
