@@ -16,7 +16,6 @@
       border: 2px solid #50B9C0;
       color: #50B9C0;
       font-weight: 500;
-      transition: all 0.2s;
     }
     .btn-panel:hover { background-color: #50B9C0; color: white; }
     .btn-panel-destacado {
@@ -24,7 +23,6 @@
       border: 2px solid #50B9C0;
       color: white;
       font-weight: 500;
-      transition: all 0.2s;
     }
     .btn-panel-destacado:hover { background-color: #3da8af; border-color: #3da8af; }
     .btn-backup {
@@ -191,19 +189,18 @@
           data.forEach(cobro => {
             if (cobro.monto_euros) totalEuros += parseFloat(cobro.monto_euros);
             
-            html += `
-              <tr>
-                <td>${cobro.recibo_vision_fecha || '-'}</td>
-                <td>$${cobro.monto_pesos ? cobro.monto_pesos.toLocaleString('es-AR') : '-'}</td>
-                <td>EUR ${cobro.monto_euros ? cobro.monto_euros.toLocaleString('es-ES') : '-'}</td>
-                <td><small>${cobro.banco_detalle || '-'}</small></td>
-              </tr>`;
+            html += '<tr>' +
+              '<td>' + (cobro.recibo_vision_fecha || '-') + '</td>' +
+              '<td>$' + (cobro.monto_pesos ? cobro.monto_pesos.toLocaleString('es-AR') : '-') + '</td>' +
+              '<td>EUR ' + (cobro.monto_euros ? cobro.monto_euros.toLocaleString('es-ES') : '-') + '</td>' +
+              '<td><small>' + (cobro.banco_detalle || '-') + '</small></td>' +
+              '</tr>';
           });
           app.innerHTML = html;
 
           const ultimo = data[0];
-          document.getElementById('ultimo-cobro').innerText = `EUR ${ultimo.monto_euros ? ultimo.monto_euros.toLocaleString('es-ES') : 'Pendiente'}`;
-          document.getElementById('total-historico').innerText = `EUR ${totalEuros.toLocaleString('es-ES')}`;
+          document.getElementById('ultimo-cobro').innerText = 'EUR ' + (ultimo.monto_euros ? ultimo.monto_euros.toLocaleString('es-ES') : 'Pendiente');
+          document.getElementById('total-historico').innerText = 'EUR ' + totalEuros.toLocaleString('es-ES');
         }
 
         const { count } = await window.db
@@ -234,16 +231,16 @@
           
           if (diffDias < 0) {
             panel.className = 'card mb-4 shadow-sm bg-danger text-white';
-            texto.innerHTML = `<strong>URGENTE!</strong> Tramite vencido hace ${Math.abs(diffDias)} dias.<br>Proximo tramite era: ${proximo.toLocaleDateString('es-ES')}`;
+            texto.innerHTML = '<strong>URGENTE!</strong> Tramite vencido hace ' + Math.abs(diffDias) + ' dias.<br>Proximo tramite era: ' + proximo.toLocaleDateString('es-ES');
           } else if (diffDias <= 30) {
             panel.className = 'card mb-4 shadow-sm bg-danger text-white';
-            texto.innerHTML = `<strong>URGENTE!</strong> Quedan ${diffDias} dias.<br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')}`;
+            texto.innerHTML = '<strong>URGENTE!</strong> Quedan ' + diffDias + ' dias.<br>Proximo tramite: ' + proximo.toLocaleDateString('es-ES');
           } else if (diffDias <= 60) {
             panel.className = 'card mb-4 shadow-sm bg-warning text-dark';
-            texto.innerHTML = `<strong>ATENCION:</strong> Quedan ${diffDias} dias.<br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')}`;
+            texto.innerHTML = '<strong>ATENCION:</strong> Quedan ' + diffDias + ' dias.<br>Proximo tramite: ' + proximo.toLocaleDateString('es-ES');
           } else {
             panel.className = 'card mb-4 shadow-sm bg-success text-white';
-            texto.innerHTML = `<strong>Todo en orden</strong><br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')} (en ${diffDias} dias)`;
+            texto.innerHTML = '<strong>Todo en orden</strong><br>Proximo tramite: ' + proximo.toLocaleDateString('es-ES') + ' (en ' + diffDias + ' dias)';
           }
         } else {
           const panel = document.getElementById('panel-supervivencia');
@@ -254,7 +251,7 @@
         setTimeout(verificarBackup, 1000);
 
       } catch (error) {
-        app.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        app.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: ' + error.message + '</td></tr>';
       }
     });
 
@@ -287,7 +284,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `IPS_Backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.download = 'IPS_Backup_' + new Date().toISOString().slice(0,10) + '.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -296,7 +293,7 @@
         const aviso = document.getElementById('aviso-backup');
         if (aviso) aviso.classList.add('d-none');
         btn.innerText = 'Backup descargado';
-        setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
+        setTimeout(function() { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
       } catch (error) {
         alert('Error al hacer backup: ' + error.message);
         btn.innerText = textoOriginal;
@@ -305,8 +302,8 @@
     }
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(reg => console.log('SW registrado')).catch(err => console.log('Error SW:', err));
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').then(function(reg) { console.log('SW registrado'); }).catch(function(err) { console.log('Error SW:', err); });
       });
     }
   </script>
