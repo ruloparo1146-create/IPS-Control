@@ -5,17 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IPS Control - Panel</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#50B9C0">
   <link rel="apple-touch-icon" href="icon-192.png">
   <style>
-    /* Fondo celeste claro */
     body { background-color: #E8F4F5 !important; }
-    
     .bg-ips { background-color: #50B9C0 !important; }
-    
-    /* Botones del panel con estilo uniforme */
     .btn-panel {
       background-color: #ffffff;
       border: 2px solid #50B9C0;
@@ -23,12 +18,7 @@
       font-weight: 500;
       transition: all 0.2s;
     }
-    .btn-panel:hover {
-      background-color: #50B9C0;
-      color: white;
-    }
-    
-    /* Excepciones: Ingreso Mensual y Supervivencia con color solido */
+    .btn-panel:hover { background-color: #50B9C0; color: white; }
     .btn-panel-destacado {
       background-color: #50B9C0;
       border: 2px solid #50B9C0;
@@ -36,37 +26,21 @@
       font-weight: 500;
       transition: all 0.2s;
     }
-    .btn-panel-destacado:hover {
-      background-color: #3da8af;
-      border-color: #3da8af;
-      color: white;
-    }
-    
+    .btn-panel-destacado:hover { background-color: #3da8af; border-color: #3da8af; }
     .btn-backup {
       background-color: #ffffff;
       border: 2px solid #28a745;
       color: #28a745;
       font-weight: 500;
-      transition: all 0.2s;
     }
-    .btn-backup:hover {
-      background-color: #28a745;
-      color: white;
-    }
-    
+    .btn-backup:hover { background-color: #28a745; color: white; }
     .btn-manual {
       background-color: #ffffff;
       border: 2px solid #0d6efd;
       color: #0d6efd;
       font-weight: 500;
-      transition: all 0.2s;
     }
-    .btn-manual:hover {
-      background-color: #0d6efd;
-      color: white;
-    }
-    
-    /* Tarjetas del panel con fondo blanco para que contrasten */
+    .btn-manual:hover { background-color: #0d6efd; color: white; }
     .card { background-color: #ffffff; }
   </style>
 </head>
@@ -85,48 +59,34 @@
   <div class="container mb-3">
     <div class="row g-2">
       <div class="col-md-3">
-        <a href="calculadora.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">
-          Ingreso Mensual
-        </a>
+        <a href="calculadora.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">Ingreso Mensual</a>
       </div>
       <div class="col-md-3">
-        <a href="historial.html" class="btn btn-panel btn-lg w-100 shadow-sm">
-          Historial
-        </a>
+        <a href="historial.html" class="btn btn-panel btn-lg w-100 shadow-sm">Historial</a>
       </div>
       <div class="col-md-3">
-        <a href="supervivencia.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">
-          Supervivencia
-        </a>
+        <a href="supervivencia.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">Supervivencia</a>
       </div>
       <div class="col-md-3">
-        <a href="graficos.html" class="btn btn-panel btn-lg w-100 shadow-sm">
-          Graficos
-        </a>
+        <a href="graficos.html" class="btn btn-panel btn-lg w-100 shadow-sm">Graficos</a>
       </div>
     </div>
     <div class="row g-2 mt-2">
       <div class="col-md-6">
-        <button class="btn btn-backup btn-lg w-100" onclick="backupRapido()">
-          Descargar Backup (JSON)
-        </button>
+        <button class="btn btn-backup btn-lg w-100" onclick="backupRapido()">Descargar Backup (JSON)</button>
       </div>
       <div class="col-md-6">
-        <a href="manual.html" class="btn btn-manual btn-lg w-100">
-          Manual de Usuario
-        </a>
+        <a href="manual.html" class="btn btn-manual btn-lg w-100">Manual de Usuario</a>
       </div>
     </div>
   </div>
 
   <div class="container">
-    <!-- Aviso de Backup -->
     <div id="aviso-backup" class="alert alert-warning d-none" role="alert">
       <strong>Recordatorio:</strong> Hace mas de 30 dias que no haces un backup de tus datos. 
       <a href="historial.html" class="alert-link">Ir al Historial para descargar</a>
     </div>
 
-    <!-- Panel de Supervivencia -->
     <div id="panel-supervivencia" class="card mb-4 shadow-sm">
       <div class="card-body text-center">
         <h5 class="card-title">Control de Supervivencia</h5>
@@ -134,7 +94,6 @@
       </div>
     </div>
 
-    <!-- Resumenes -->
     <div class="row mb-4">
       <div class="col-md-4">
         <div class="card shadow-sm text-center">
@@ -162,14 +121,13 @@
       </div>
     </div>
 
-    <!-- Tabla de movimientos -->
     <div class="card shadow-sm">
       <div class="card-header bg-white">
         <h5 class="mb-0">Ultimos Movimientos</h5>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          < paneltable class="table table-striped mb-0">
+          <table class="table table-striped mb-0">
             <thead>
               <tr>
                 <th>Fecha Recibo</th>
@@ -201,7 +159,7 @@
         await new Promise(r => setTimeout(r, 200));
         intentos++;
         if (intentos > 20) {
-          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar a la base de datos.</td></tr>';
+          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar.</td></tr>';
           return;
         }
       }
@@ -215,7 +173,6 @@
 
       const app = document.getElementById('tabla-cobros');
       try {
-        // Cargar ultimos 10 cobros (excluyendo tramites de supervivencia)
         const { data, error } = await window.db
           .from('cobros')
           .select('*')
@@ -249,7 +206,6 @@
           document.getElementById('total-historico').innerText = `EUR ${totalEuros.toLocaleString('es-ES')}`;
         }
 
-        // Contar tramites de supervivencia
         const { count } = await window.db
           .from('cobros')
           .select('*', { count: 'exact', head: true })
@@ -257,7 +213,6 @@
         
         document.getElementById('total-supervivencias').innerText = count || 0;
 
-        // SemÃ¡foro de supervivencia
         const { data: supData } = await window.db
           .from('cobros')
           .select('supervivencia_enviada')
@@ -291,7 +246,7 @@
             texto.innerHTML = `<strong>Todo en orden</strong><br>Proximo tramite: ${proximo.toLocaleDateString('es-ES')} (en ${diffDias} dias)`;
           }
         } else {
-          const = document.getElementById('panel-supervivencia');
+          const panel = document.getElementById('panel-supervivencia');
           panel.className = 'card mb-4 shadow-sm bg-warning text-dark';
           document.getElementById('supervivencia-texto').innerHTML = '<strong>Sin registro de supervivencia</strong><br>Registra el primer tramite para empezar el control.';
         }
@@ -306,16 +261,9 @@
     function verificarBackup() {
       const ultimoBackup = localStorage.getItem('ips_ultimo_backup');
       const aviso = document.getElementById('aviso-backup');
-      
-      if (!ultimoBackup) {
-        aviso.classList.remove('d-none');
-        return;
-      }
-      
+      if (!ultimoBackup) { aviso.classList.remove('d-none'); return; }
       const diasSinBackup = Math.floor((new Date() - new Date(ultimoBackup)) / (1000 * 60 * 60 * 24));
-      if (diasSinBackup >= 30) {
-        aviso.classList.remove('d-none');
-      }
+      if (diasSinBackup >= 30) { aviso.classList.remove('d-none'); }
     }
 
     async function backupRapido() {
@@ -323,15 +271,9 @@
       const textoOriginal = btn.innerText;
       btn.innerText = 'Preparando...';
       btn.disabled = true;
-
       try {
-        const { data, error } = await window.db
-          .from('cobros')
-          .select('*')
-          .order('recibo_vision_fecha', { ascending: false });
-
+        const { data, error } = await window.db.from('cobros').select('*').order('recibo_vision_fecha', { ascending: false });
         if (error) throw error;
-
         const backup = {
           app: 'IPS Control',
           version: '1.0',
@@ -340,7 +282,6 @@
           total_registros: data.length,
           registros: data
         };
-
         const json = JSON.stringify(backup, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -351,17 +292,11 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
         localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
         const aviso = document.getElementById('aviso-backup');
         if (aviso) aviso.classList.add('d-none');
-
         btn.innerText = 'Backup descargado';
-        setTimeout(() => {
-          btn.innerText = textoOriginal;
-          btn.disabled = false;
-        }, 2000);
-
+        setTimeout(() => { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
       } catch (error) {
         alert('Error al hacer backup: ' + error.message);
         btn.innerText = textoOriginal;
@@ -371,9 +306,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('Service Worker registrado'))
-          .catch(err => console.log('Error SW:', err));
+        navigator.serviceWorker.register('sw.js').then(reg => console.log('SW registrado')).catch(err => console.log('Error SW:', err));
       });
     }
   </script>
