@@ -6,13 +6,16 @@
   <title>IPS Control - Supervivencia</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    body { background-color: #E8F4F5 !important; }
     .bg-ips { background-color: #50B9C0 !important; }
     .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
     .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
-    .semaforo { font-size: 4rem; line-height: 1; }
+    .semaforo { font-size: 3rem; line-height: 1; font-weight: bold; }
+    .card { background-color: #ffffff; }
+    .table-sm td, .table-sm th { padding: 0.5rem; font-size: 0.9rem; }
   </style>
 </head>
-<body class="bg-light">
+<body>
   
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
@@ -25,17 +28,24 @@
     <!-- Panel principal de estado -->
     <div id="panel-estado" class="card shadow-sm mb-4">
       <div class="card-body text-center py-4">
-        <div id="semaforo-icono" class="semaforo mb-2">Cargando...</div>
+        <div id="semaforo-icono" class="semaforo mb-2">...</div>
         <h3 id="estado-titulo">Calculando...</h3>
         <p class="text-muted mb-0" id="estado-detalle"></p>
       </div>
     </div>
 
-    <!-- Boton para abrir formulario -->
-    <div class="d-grid mb-4">
-      <button class="btn btn-ips btn-lg" data-bs-toggle="collapse" data-bs-target="#formSupervivencia">
-        Registrar Nuevo Tramite
-      </button>
+    <!-- Botones de accion -->
+    <div class="row g-2 mb-4">
+      <div class="col-md-6">
+        <button class="btn btn-ips btn-lg w-100" data-bs-toggle="collapse" data-bs-target="#formSupervivencia">
+          Registrar Nuevo Tramite
+        </button>
+      </div>
+      <div class="col-md-6">
+        <button class="btn btn-outline-primary btn-lg w-100" onclick="activarNotificaciones()">
+          Activar Notificaciones
+        </button>
+      </div>
     </div>
 
     <!-- Formulario colapsable -->
@@ -76,21 +86,20 @@
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-striped mb-0">
-            <thead>
-             <thead>
+          <table class="table table-striped table-sm mb-0">
+            <thead class="table-dark">
               <tr>
                 <th>Tipo</th>
                 <th>Envio</th>
-                <th>Recepcion</th>
+                <th>Receuperpcion</th>
                 <th>Demora</th>
                 <th>Obs</th>
                 <th>Proximo</th>
+                <th class="text-center">Acciones</th>
               </tr>
             </thead>
-            </thead>
             <tbody id="tabla-supervivencia">
-              <tr><td colspan="5" class="text-center">Cargando datos...</td></tr>
+              <tr><td colspan="7" class="text-center">Cargando datos...</td></tr>
             </tbody>
           </table>
         </div>
@@ -107,6 +116,7 @@
 
   <script>
     let todosLosTramites = [];
+    window.todosLosTramites = todosLosTramites;
 
     document.addEventListener('DOMContentLoaded', async () => {
       let intentos = 0;
@@ -125,38 +135,39 @@
         return;
       }
 
-      // Poner fecha de hoy por defecto en el form
+      // Poner fecha de hoy por defecto
       document.getElementById('fecha_envio').value = new Date().toISOString().split('T')[0];
 
-      // Cargar datos
       await cargarTramites();
       configurarFormulario();
     });
 
     async function cargarTramites() {
       try {
+        // Traer SOLO los registros de tipo Tramite Supervivencia
         const { data, error } = await window.db
           .from('cobros')
           .select('*')
-          .not('supervivencia_enviada', 'is', null)
+          .ilike('banco_detalle', '%supervivencia%')
           .order('supervivencia_enviada', { ascending: false });
 
         if (error) throw error;
 
         todosLosTramites = data || [];
+        window.todosLosTramites = todosLosTramites;
         renderizarTabla();
         actualizarSemaforo();
 
       } catch (error) {
-        document.getElementById('tabla-supervivencia').innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        document.getElementById('tabla-supervivencia').innerHTML = `<tr><td colspan="7" class="text-center text-danger">Error: ${error.message}</td></tr>`;
       }
     }
 
     function renderizarTabla() {
-      const tbody = document.getElementById('tabla-supervivencia');
+      const tbody = document.getElementById('tabla-svivencia');
 
       if (todosLosTramites.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay tramites registrados. Registra el primero!</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay tramites registrados. Registra el primero!</td></tr>';
         return;
       }
 
@@ -168,7 +179,6 @@
           demora = dias + ' dias';
         }
 
-        // Proximo tramite (5 meses despues del envio)
         let proximo = '-';
         if (t.supervivencia_enviada) {
           const fecha = new Date(t.supervivencia_enviada);
@@ -178,11 +188,15 @@
 
         html += `
           <tr>
+            <td><span class="badge bg-warning text-dark">Supervivencia</span></td>
             <td>${t.supervivencia_enviada || '-'}</td>
             <td>${t.supervivencia_recibida || 'Pendiente'}</td>
             <td>${demora}</td>
             <td><small>${t.obs || '-'}</small></td>
             <td>${proximo}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-danger" onclick="eliminarTramite(${t.id})" title="Eliminar">X</button>
+            </td>
           </tr>`;
       });
       tbody.innerHTML = html;
@@ -243,13 +257,13 @@
         const fechaEnvio = document.getElementById('fecha_envio').value;
         const fechaRecepcion = document.getElementById('fecha_recepcion').value || null;
 
-        // Calcular proxima fecha automaticamente
         const proxima = new Date(fechaEnvio);
         proxima.setMonth(proxima.getMonth() + 5);
 
         const { error } = await window.db.from('cobros').insert([{
           user_id: session.user.id,
           recibo_vision_fecha: fechaEnvio,
+          recibo_fecha_pago_arg: fechaEnvio,
           monto_pesos: 0,
           monto_euros: 0,
           banco_detalle: 'Tramite Supervivencia',
@@ -264,23 +278,32 @@
         } else {
           msg.innerHTML = `<span class="text-success">Tramite guardado con exito!</span>`;
           document.getElementById('form-supervivencia').reset();
-          // Recargar
+          document.getElementById('fecha_envio').value = new Date().toISOString().split('T')[0];
           await cargarTramites();
         }
       });
     }
-  </script>
-  <script>
-    // ==== SISTEMA DE NOTIFICACIONES ====
+
+    async function eliminarTramite(id) {
+      if (!confirm('Estas seguro de que quieres eliminar este tramite? Esta accion no se puede deshacer.')) return;
+
+      const { error } = await window.db.from('cobros').delete().eq('id', id);
+
+      if (error) {
+        alert('Error al eliminar: ' + error.message);
+      } else {
+        await cargarTramites();
+      }
+    }
+
+    // ============ NOTIFICACIONES ============
     async function pedirPermisoNotificaciones() {
       if (!('Notification' in window)) {
         console.log('Este navegador no soporta notificaciones.');
         return false;
       }
-
       if (Notification.permission === 'granted') return true;
       if (Notification.permission === 'denied') return false;
-
       const permiso = await Notification.requestPermission();
       return permiso === 'granted';
     }
@@ -289,13 +312,11 @@
       const permiso = await pedirPermisoNotificaciones();
       if (!permiso) return;
 
-      // Asegurar que el Service Worker estÃ© listo
       if (!navigator.serviceWorker.controller) {
-        console.log('Service Worker no esta controlando la pagina todavia.');
+        console.log('Service Worker no controla la pagina todavia.');
         return;
       }
 
-      // Enviar mensaje al Service Worker para mostrar la notificacion
       navigator.serviceWorker.controller.postMessage({
         type: 'MOSTRAR_NOTIFICACION',
         titulo: titulo,
@@ -304,13 +325,25 @@
       });
     }
 
+    async function activarNotificaciones() {
+      const permiso = await pedirPermisoNotificaciones();
+      if (permiso) {
+        await enviarNotificacion(
+          'Notificaciones activadas',
+          'Te avisaremos cuando se acerque el tramite de supervivencia.',
+          'bienvenida'
+        );
+        alert('Notificaciones activadas correctamente!');
+      } else {
+        alert('No se pudieron activar las notificaciones. Revisa los permisos del navegador.');
+      }
+    }
+
     // Verificar automaticamente si hay que notificar al cargar
     window.addEventListener('load', async () => {
-      // Esperar 2 segundos para que todo cargue bien
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3000));
       
-      // Si hay tramites cargados y la alerta es roja o amarilla, notificar
-      if (typeof todosLosTramites !== 'undefined' && todosLosTramites.length > 0) {
+      if (todosLosTramites.length > 0) {
         const ultimo = todosLosTramites[0];
         const fechaUltimo = new Date(ultimo.supervivencia_enviada);
         const proximo = new Date(fechaUltimo);
@@ -319,25 +352,12 @@
         const hoy = new Date();
         const diffDias = Math.round((proximo - hoy) / (1000 * 60 * 60 * 24));
 
-        // Solo notificamos si estamos en zona amarilla o roja
         if (diffDias < 0) {
-          enviarNotificacion(
-            'TRAMITE VENCIDO - IPS Control',
-            `El tramite de supervivencia esta vencido hace ${Math.abs(diffDias)} dias. Enviar urgente!`,
-            'supervivencia-vencida'
-          );
+          enviarNotificacion('TRAMITE VENCIDO - IPS Control', `El tramite esta vencido hace ${Math.abs(diffDias)} dias. Enviar urgente!`, 'supervivencia-vencida');
         } else if (diffDias <= 30) {
-          enviarNotificacion(
-            'URGENTE: Tramite en 30 dias o menos',
-            `Te quedan ${diffDias} dias para enviar el certificado de supervivencia.`,
-            'supervivencia-urgente'
-          );
+          enviarNotificacion('URGENTE: Tramite en 30 dias o menos', `Te quedan ${diffDias} dias para enviar el certificado.`, 'supervivencia-urgente');
         } else if (diffDias <= 60) {
-          enviarNotificacion(
-            'ATENCION: Tramite en 60 dias o menos',
-            `Te quedan ${diffDias} dias para preparar el tramite de supervivencia.`,
-            'supervivencia-atencion'
-          );
+          enviarNotificacion('ATENCION: Tramite en 60 dias o menos', `Te quedan ${diffDias} dias para preparar el tramite.`, 'supervivencia-atencion');
         }
       }
     });
