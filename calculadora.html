@@ -183,43 +183,72 @@
       btn.innerText = 'Buscando...';
       btn.disabled = true;
       var info = document.getElementById('info-cotizacion');
-      info.innerHTML = '<span class="text-muted">Conectando con dolarapi.com...</span>';
+      info.innerHTML = '<span class="text-muted">Conectando...</span>';
 
+      // ==== FUENTE 1: dolarapi.com (endpoint corregido /eur) ====
       try {
-        var res = await fetch('https://dolarapi.com/v1/cotizaciones/euros');
-        console.log('Respuesta status:', res.status);
+        var res = await fetch('https://dolarapi.com/v1/cotizaciones/eur');
+        console.log('DolarAPI respuesta status:', res.status);
 
-        if (!res.ok) {
-          throw new Error('El servidor respondio con error ' + res.status);
-        }
+        if (res.ok) {
+          var data = await res.json();
+          console.log('DolarAPI datos:', data);
 
-        var data = await res.json();
-        console.log('Datos recibidos:', data);
-
-        var euroOficial = null;
-        if (Array.isArray(data)) {
-          for (var i = 0; i < data.length; i++) {
-            if (data[i].casa === 'oficial') {
-              euroOficial = data[i];
-              break;
-            }
+          var valorVenta = null;
+          if (data && data.venta) {
+            valorVenta = data.venta;
+          } else if (data && data.compra) {
+            valorVenta = data.compra;
           }
-        } else if (data && data.venta) {
-          euroOficial = data;
-        }
 
-        if (euroOficial && euroOficial.venta) {
-          document.getElementById('cotizacion').value = euroOficial.venta;
-          info.innerHTML = '<span class="text-success">Cotizacion Oficial cargada: $' + euroOficial.venta + ' | Fecha: ' + new Date().toLocaleString('es-AR') + '</span>';
-        } else {
-          info.innerHTML = '<span class="text-danger">No se encontro el valor "oficial". Ingresalo a mano.</span>';
+          if (valorVenta) {
+            document.getElementById('cotizacion').value = valorVenta;
+            info.innerHTML = '<span class="text-success">Cotizacion Oficial (dolarapi): $' + valorVenta + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+            return;
+          }
         }
-
       } catch (e) {
-        console.error('Error al traer cotizacion:', e);
-        info.innerHTML = '<span class="text-danger">Error al conectar: ' + e.message + '. Ingresa la cotizacion a mano.</span>';
+        console.warn('DolarAPI fallo, intentando alternativa...', e);
       }
 
+      // ==== FUENTE 2: BCRA (alternativa) ====
+      try {
+        info.innerHTML = '<span class="text-muted">Intentando con BCRA...</span>';
+        var res2 = await fetch('https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/');
+        console.log('BCRA respuesta status:', res2.status);
+
+        if (res2.ok) {
+          var data2 = await res2.json();
+          console.log('BCRA datos:', data2);
+
+          var lista = data2.results || data2;
+          var euro = null;
+          if (Array.isArray(lista)) {
+            for (var i = 0; i < lista.length; i++) {
+              if (lista[i].codigoMoneda === 'EUR' || lista[i].descripcion === 'EURO') {
+                euro = lista[i];
+                break;
+              }
+            }
+          }
+
+          if (euro && euro.tipoPase) {
+            var valorBcra = euro.tipoPase;
+            document.getElementById('cotizacion').value = valorBcra;
+            info.innerHTML = '<span class="text-success">Cotizacion Oficial (BCRA): $' + valorBcra + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('BCRA fallo tambien:', e);
+      }
+
+      // ==== SI FALLAN TODAS LAS FUENTES ====
+      info.innerHTML = '<span class="text-danger">No se pudo obtener la cotizacion automaticamente. Por favor, ingresala a mano (la encontras en tu resumen del banco).</span>';
       btn.innerText = textoOriginal;
       btn.disabled = false;
     }
@@ -278,7 +307,7 @@
         recibo_vision_fecha: document.getElementById('fecha_recibo').value,
         recibo_fecha_pago_arg: document.getElementById('fecha_recibo').value,
         monto_pesos: datosCalculados.pesos,
-        transferencia_fecha: document.getElementById('fecha_transferencia').value || null,
+        transferencia_fecha: document.getElementById('transferencia_fecha').value || null,
         monto_euros: netoReal,
         cotizacion_banco_euro: datosCalculados.cotizacion,
         cotizacion_calculada_euro: datosCalculados.cotizacion,
