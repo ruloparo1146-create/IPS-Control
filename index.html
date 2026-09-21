@@ -11,9 +11,6 @@
     .bg-ips {
       background-color: #50B9C0 !important;
     }
-    .text-ips {
-      color: #50B9C0 !important;
-    }
     .btn-ips {
       background-color: #50B9C0;
       border-color: #50B9C0;
@@ -37,11 +34,14 @@
       </div>
     </div>
   </nav>
-<div class="container mb-3">
-  <a href="calculadora.html" class="btn btn-lg text-white w-100" style="background-color:#50B9C0;">
-    ðŸ§® Nueva ConversiÃ³n / Calculadora
-  </a>
-</div>
+
+  <div class="container mb-3">
+    <!-- BotÃ³n para ir a la Calculadora -->
+    <a href="calculadora.html" class="btn btn-ips btn-lg w-100 shadow-sm">
+      ðŸ§® Nueva ConversiÃ³n / Calculadora
+    </a>
+  </div>
+
   <div class="container">
     <!-- Panel de Supervivencia -->
     <div id="panel-supervivencia" class="card mb-4 shadow-sm">
@@ -106,7 +106,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      // 1. Esperar conexion
+      // 1. Esperar conexion a Supabase
       let intentos = 0;
       while (typeof window.db === 'undefined') {
         await new Promise(r => setTimeout(r, 200));
@@ -125,7 +125,7 @@
       }
       document.getElementById('user-email').innerText = session.user.email;
 
-      // 3. Cargar datos
+      // 3. Cargar datos de los cobros
       const app = document.getElementById('tabla-cobros');
       try {
         const { data, error } = await window.db
@@ -162,7 +162,7 @@
         document.getElementById('ultimo-cobro').innerText = `EUR ${ultimo.monto_euros ? ultimo.monto_euros.toLocaleString('es-ES') : 'Pendiente'}`;
         document.getElementById('total-historico').innerText = `EUR ${totalEuros.toLocaleString('es-ES')}`;
 
-        // 5. LÃ³gica de Supervivencia
+        // 5. LÃ³gica de Supervivencia (5 meses despuÃ©s del Ãºltimo recibo)
         const fechaUltimo = new Date(ultimo.recibo_vision_fecha);
         fechaUltimo.setMonth(fechaUltimo.getMonth() + 5);
         
