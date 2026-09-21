@@ -1,12 +1,18 @@
-const CACHE_NAME = 'ips-control-v1';
+const CACHE_NAME = 'ips-control-v7';  // Actualizamos version
 const APP_ASSETS = [
   './',
   './index.html',
   './login.html',
+  './calculadora.html',
+  './historial.html',
+  './supervivencia.html',
   './css/style.css',
   './js/config.js',
   './js/supabase.js',
-  './js/auth.js'
+  './js/auth.js',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -39,6 +45,39 @@ self.addEventListener('fetch', event => {
         }
         return response;
       });
+    })
+  );
+});
+
+// ============ NOTIFICACIONES PUSH ============
+// Escuchar mensajes desde la pÃ¡gina principal para mostrar notificaciones
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'MOSTRAR_NOTIFICACION') {
+    const { titulo, cuerpo, tag } = event.data;
+    self.registration.showNotification(titulo, {
+      body: cuerpo,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag: tag || 'ips-control',
+      requireInteraction: true,
+      vibrate: [200, 100, 200]
+    });
+  }
+});
+
+// Al hacer clic en la notificaciÃ³n, abrir la app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('supervivencia') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('./supervivencia.html');
+      }
     })
   );
 });
