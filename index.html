@@ -10,12 +10,67 @@
   <meta name="theme-color" content="#50B9C0">
   <link rel="apple-touch-icon" href="icon-192.png">
   <style>
+    /* Fondo celeste claro */
+    body { background-color: #E8F4F5 !important; }
+    
     .bg-ips { background-color: #50B9C0 !important; }
-    .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
-    .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
+    
+    /* Todos los botones del panel con el mismo estilo */
+    .btn-panel {
+      background-color: #ffffff;
+      border: 2px solid #50B9C0;
+      color: #50B9C0;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-panel:hover {
+      background-color: #50B9C0;
+      color: white;
+    }
+    
+    /* Excepciones: Ingreso Mensual y Supervivencia van con color solido */
+    .btn-panel-destacado {
+      background-color: #50B9C0;
+      border: 2px solid #50B9C0;
+      color: white;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-panel-destacado:hover {
+      background-color: #3da8af;
+      border-color: #3da8af;
+      color: white;
+    }
+    
+    .btn-backup {
+      background-color: #ffffff;
+      border: 2px solid #28a745;
+      color: #28a745;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-backup:hover {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .btn-manual {
+      background-color: #ffffff;
+      border: 2px solid #0d6efd;
+      color: #0d6efd;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-manual:hover {
+      background-color: #0d6efd;
+      color: white;
+    }
+    
+    /* Tarjetas del panel con fondo blanco para que contrasten */
+    .card { background-color: #ffffff; }
   </style>
 </head>
-<body class="bg-light">
+<body>
   
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
@@ -30,34 +85,34 @@
   <div class="container mb-3">
     <div class="row g-2">
       <div class="col-md-3">
-        <a href="calculadora.html" class="btn btn-ips btn-lg w-100 shadow-sm">
+        <a href="calculadora.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">
           Ingreso Mensual
         </a>
       </div>
       <div class="col-md-3">
-        <a href="historial.html" class="btn btn-dark btn-lg w-100 shadow-sm">
+        <a href="historial.html" class="btn btn-panel btn-lg w-100 shadow-sm">
           Historial
         </a>
       </div>
       <div class="col-md-3">
-        <a href="supervivencia.html" class="btn btn-warning btn-lg w-100 shadow-sm">
+        <a href="supervivencia.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">
           Supervivencia
         </a>
       </div>
       <div class="col-md-3">
-        <a href="graficos.html" class="btn btn-info text-white btn-lg w-100 shadow-sm">
+        <a href="graficos.html" class="btn btn-panel btn-lg w-100 shadow-sm">
           Graficos
         </a>
       </div>
     </div>
     <div class="row g-2 mt-2">
       <div class="col-md-6">
-        <button class="btn btn-outline-success btn-lg w-100" onclick="backupRapido()">
+        <button class="btn btn-backup btn-lg w-100" onclick="backupRapido()">
           Descargar Backup (JSON)
         </button>
       </div>
       <div class="col-md-6">
-        <a href="manual.html" class="btn btn-outline-primary btn-lg w-100">
+        <a href="manual.html" class="btn btn-manual btn-lg w-100">
           Manual de Usuario
         </a>
       </div>
@@ -135,7 +190,7 @@
         await new Promise(r => setTimeout(r, 200));
         intentos++;
         if (intentos > 20) {
-          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar a la base de datos.</td></tr>';
+          document.getElementById('tabla-cobros').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: No se pudo conectar.</td></tr>';
           return;
         }
       }
@@ -193,7 +248,6 @@
           <strong>Todo en orden</strong><br>
           Proximo tramite estimado: <strong>${fechaUltimo.toLocaleDateString('es-ES')}</strong>`;
 
-        // Verificar aviso de backup
         setTimeout(verificarBackup, 1000);
 
       } catch (error) {
@@ -201,13 +255,11 @@
       }
     });
 
-    // ============ AVISO DE BACKUP ============
     function verificarBackup() {
       const ultimoBackup = localStorage.getItem('ips_ultimo_backup');
       const aviso = document.getElementById('aviso-backup');
       
       if (!ultimoBackup) {
-        // Nunca hizo backup
         aviso.classList.remove('d-none');
         return;
       }
@@ -218,11 +270,10 @@
       }
     }
 
-    // ============ BACKUP RAPIDO ============
     async function backupRapido() {
       const btn = event.target;
       const textoOriginal = btn.innerText;
-      btn.innerText = 'Preparando backup...';
+      btn.innerText = 'Preparando...';
       btn.disabled = true;
 
       try {
@@ -253,10 +304,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // Guardar fecha del ultimo backup
         localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
-
-        // Ocultar el aviso si estaba visible
         const aviso = document.getElementById('aviso-backup');
         if (aviso) aviso.classList.add('d-none');
 
@@ -273,7 +321,6 @@
       }
     }
 
-    // ============ SERVICE WORKER ============
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
