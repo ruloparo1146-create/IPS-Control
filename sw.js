@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ips-control-v8';
+const CACHE_NAME = 'ips-control-v9';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -50,8 +50,6 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ============ NOTIFICACIONES PUSH ============
-// Escuchar mensajes desde la pÃ¡gina principal para mostrar notificaciones
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'MOSTRAR_NOTIFICACION') {
     const { titulo, cuerpo, tag } = event.data;
@@ -66,7 +64,6 @@ self.addEventListener('message', event => {
   }
 });
 
-// Al hacer clic en la notificaciÃ³n, abrir la app
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
